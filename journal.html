@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Journal</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .entry-form { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .entry-form textarea { width: 100%; height: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .entry-form button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .entry-form button:hover { background: #0056b3; }
+        .entry { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        .entry-date { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .entry-content { line-height: 1.6; }
+        .no-entries { text-align: center; color: #666; font-style: italic; }
+        .delete-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; float: right; }
+        .delete-btn:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📖 My Journal</h1>
+    </div>
+
+    <div class="entry-form">
+        <h3>New Entry</h3>
+        <textarea id="entryText" placeholder="What's on your mind today?"></textarea>
+        <br><br>
+        <button onclick="addEntry()">Save Entry</button>
+    </div>
+
+    <div id="entriesContainer">
+        <div class="no-entries">No entries yet. Start writing!</div>
+    </div>
+
+    <script>
+        let entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+
+        function addEntry() {
+            const text = document.getElementById('entryText').value.trim();
+            if (!text) return;
+
+            const entry = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+                content: text
+            };
+
+            entries.unshift(entry);
+            localStorage.setItem('journalEntries', JSON.stringify(entries));
+            document.getElementById('entryText').value = '';
+            displayEntries();
+        }
+
+        function deleteEntry(id) {
+            entries = entries.filter(entry => entry.id !== id);
+            localStorage.setItem('journalEntries', JSON.stringify(entries));
+            displayEntries();
+        }
+
+        function displayEntries() {
+            const container = document.getElementById('entriesContainer');
+            
+            if (entries.length === 0) {
+                container.innerHTML = '<div class="no-entries">No entries yet. Start writing!</div>';
+                return;
+            }
+
+            container.innerHTML = entries.map(entry => `
+                <div class="entry">
+                    <button class="delete-btn" onclick="deleteEntry(${entry.id})">Delete</button>
+                    <div class="entry-date">${entry.date}</div>
+                    <div class="entry-content">${entry.content.replace(/\n/g, '<br>')}</div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('entryText').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                addEntry();
+            }
+        });
+
+        displayEntries();
+    </script>
+</body>
+</html>
