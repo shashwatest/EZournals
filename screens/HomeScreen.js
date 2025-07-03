@@ -3,12 +3,14 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar } 
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, deleteEntry, getTheme } from '../utils/storage';
 import EntryCard from '../components/EntryCard';
+import Sidebar from '../components/Sidebar';
 import { theme, themes } from '../styles/theme';
 
 export default function HomeScreen({ navigation }) {
   const [entries, setEntries] = useState([]);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
   const [currentTheme, setCurrentTheme] = useState('blue');
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -70,10 +72,10 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
         <TouchableOpacity 
-          style={styles.settingsButton}
-          onPress={() => navigation.navigate('Settings')}
+          style={styles.menuButton}
+          onPress={() => setShowSidebar(true)}
         >
-          <Ionicons name="settings-outline" size={20} color={theme.colors.text} />
+          <Ionicons name="menu-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -99,6 +101,12 @@ export default function HomeScreen({ navigation }) {
       >
         <Ionicons name="create-outline" size={24} color={theme.colors.surface} />
       </TouchableOpacity>
+      
+      <Sidebar 
+        visible={showSidebar}
+        onClose={() => setShowSidebar(false)}
+        navigation={navigation}
+      />
     </View>
   );
 }
@@ -139,7 +147,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7F8C8D'
   },
-  settingsButton: {
+  menuButton: {
     padding: 8,
     borderRadius: 8
   },
