@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import RichTextRenderer from '../components/RichTextRenderer';
 
 export default function ViewEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
@@ -35,7 +36,12 @@ export default function ViewEntryScreen({ route, navigation }) {
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Entry Details</Text>
         </View>
-        <View style={styles.placeholder} />
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('EditEntry', { entry })}
+          style={styles.editButton}
+        >
+          <Ionicons name="create-outline" size={20} color={theme.accent} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -54,7 +60,7 @@ export default function ViewEntryScreen({ route, navigation }) {
         </View>
         
         <View style={styles.contentContainer}>
-          <Text style={styles.content}>{entry.content}</Text>
+          <RichTextRenderer content={entry.content} style={styles.content} />
         </View>
       </ScrollView>
     </View>
@@ -80,6 +86,9 @@ const createStyles = (theme) => StyleSheet.create({
     elevation: 3
   },
   backButton: {
+    padding: 8
+  },
+  editButton: {
     padding: 8
   },
   headerInfo: {

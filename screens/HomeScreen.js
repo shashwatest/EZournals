@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, deleteEntry } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,8 +9,11 @@ import Sidebar from '../components/Sidebar';
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
   const [entries, setEntries] = useState([]);
+  const [filteredEntries, setFilteredEntries] = useState([]);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   if (!theme) {
     return (
@@ -30,14 +33,30 @@ export default function HomeScreen({ navigation }) {
     try {
       const data = await getEntries();
       setEntries(data);
+      setFilteredEntries(data);
       
       const totalWords = data.reduce((sum, entry) => sum + (entry.content ? entry.content.split(' ').length : 0), 0);
       setStats({ totalEntries: data.length, totalWords });
     } catch (error) {
       console.error('Error loading data:', error);
       setEntries([]);
+      setFilteredEntries([]);
       setStats({ totalEntries: 0, totalWords: 0 });
     }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setFilteredEntries(entries);
+      return;
+    }
+    
+    const filtered = entries.filter(entry => 
+      entry.content.toLowerCase().includes(query.toLowerCase()) ||
+      (entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
+    );
+    setFilteredEntries(filtered);
   };
 
   const handleDelete = (id) => {
@@ -83,18 +102,46 @@ export default function HomeScreen({ navigation }) {
             {stats.totalEntries} entries • {stats.totalWords} words
           </Text>
         </View>
-        <View style={styles.placeholder} />
+        <TouchableOpacity 
+          style={styles.searchButton}
+          onPress={() => setShowSearch(!showSearch)}
+        >
+          <Ionicons name="search-outline" size={24} color={theme.text} />
+        </TouchableOpacity>
       </View>
 
-      {entries.length === 0 ? (
+      {showSearch && (
+        <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
+          <Ionicons name="search-outline" size={20} color={theme.textLight} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder="Search entries..."
+            placeholderTextColor={theme.textLight}
+            value={searchQuery}
+            onChangeText={handleSearch}
+            autoFocus
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <Ionicons name="close-circle" size={20} color={theme.textLight} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {filteredEntries.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="book-outline" size={64} color={theme.textLight} />
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Your journal awaits</Text>
-          <Text style={[styles.emptySubtext, { color: theme.textLight }]}>Capture your thoughts and memories</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            {searchQuery ? 'No entries found' : 'Your journal awaits'}
+          </Text>
+          <Text style={[styles.emptySubtext, { color: theme.textLight }]}>
+            {searchQuery ? 'Try a different search term' : 'Capture your thoughts and memories'}
+          </Text>
         </View>
       ) : (
         <FlatList
-          data={entries}
+          data={filteredEntries}
           renderItem={renderEntry}
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
@@ -158,8 +205,9 @@ const createStyles = (theme) => StyleSheet.create({
     flex: 1,
     alignItems: 'center'
   },
-  placeholder: {
-    width: 40
+  searchButton: {
+    padding: 8,
+    borderRadius: 8
   },
   menuButton: {
     padding: 8,
@@ -202,5 +250,24 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     color: '#BDC3C7',
     textAlign: 'center'
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16
   }
 });

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { getTagColor } from '../utils/storage';
+import RichTextRenderer from './RichTextRenderer';
 
 export default function EntryCard({ entry, onPress, onDelete }) {
   const { theme } = useTheme();
@@ -73,9 +74,12 @@ export default function EntryCard({ entry, onPress, onDelete }) {
         </TouchableOpacity>
       </View>
       
-      <Text style={styles.preview} numberOfLines={3}>
-        {entry.content}
-      </Text>
+      <View style={styles.previewContainer}>
+        <RichTextRenderer 
+          content={entry.content.substring(0, 150) + (entry.content.length > 150 ? '...' : '')} 
+          style={styles.preview} 
+        />
+      </View>
       
       {entry.tags && entry.tags.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
@@ -161,11 +165,13 @@ const createStyles = (theme) => StyleSheet.create({
   deleteButton: {
     padding: 4
   },
+  previewContainer: {
+    marginBottom: 16
+  },
   preview: {
     fontSize: 16,
     lineHeight: 24,
-    color: theme.text,
-    marginBottom: 16
+    color: theme.text
   },
   footer: {
     borderTopWidth: 1,

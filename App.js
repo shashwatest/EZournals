@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import HomeScreen from './screens/HomeScreen';
 import AddEntryScreen from './screens/AddEntryScreen';
+import EditEntryScreen from './screens/EditEntryScreen';
 import ViewEntryScreen from './screens/ViewEntryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import NavigateScreen from './screens/NavigateScreen';
@@ -31,6 +32,7 @@ function AppNavigator() {
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="AddEntry" component={AddEntryScreen} />
+        <Stack.Screen name="EditEntry" component={EditEntryScreen} />
         <Stack.Screen name="ViewEntry" component={ViewEntryScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Navigate" component={NavigateScreen} />

@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { saveEntry } from '../utils/storage';
+import { updateEntry } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import TagInput from '../components/TagInput';
-import FloatingTimestamp from '../components/FloatingTimestamp';
-import TimeRangeTracker from '../components/TimeRangeTracker';
 import RichTextEditor from '../components/RichTextEditor';
 
-export default function AddEntryScreen({ navigation }) {
+export default function EditEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
-  const [content, setContent] = useState('');
-  const [wordCount, setWordCount] = useState(0);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [eventTime, setEventTime] = useState(new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-  const [showTimestamp, setShowTimestamp] = useState(false);
-  const [timeRange, setTimeRange] = useState(null);
-  const [showTimeRange, setShowTimeRange] = useState(false);
+  const { entry } = route.params;
+  const [content, setContent] = useState(entry.content);
+  const [wordCount, setWordCount] = useState(entry.content.split(' ').filter(word => word.length > 0).length);
+  const [selectedTags, setSelectedTags] = useState(entry.tags || []);
 
   if (!theme) return null;
 
@@ -32,15 +27,13 @@ export default function AddEntryScreen({ navigation }) {
     }
 
     try {
-      await saveEntry({ 
+      await updateEntry(entry.id, { 
         content: content.trim(),
-        tags: selectedTags,
-        eventTime: eventTime,
-        timeRange: timeRange
+        tags: selectedTags
       });
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save entry');
+      Alert.alert('Error', 'Failed to update entry');
     }
   };
 
@@ -57,7 +50,7 @@ export default function AddEntryScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Entry</Text>
+        <Text style={styles.headerTitle}>Edit Entry</Text>
         <TouchableOpacity 
           onPress={handleSave}
           style={[styles.saveButton, !content.trim() && styles.saveButtonDisabled]}
@@ -76,26 +69,6 @@ export default function AddEntryScreen({ navigation }) {
             onChangeText={handleTextChange}
             placeholder="What's on your mind?"
           />
-          
-          <View style={styles.suggestionsContainer}>
-            <TouchableOpacity 
-              style={styles.timestampSuggestion}
-              onPress={() => setShowTimestamp(true)}
-            >
-              <Ionicons name="time-outline" size={16} color={theme.textLight} />
-              <Text style={styles.timestampText}>Time: {eventTime}</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.timeRangeSuggestion}
-              onPress={() => setShowTimeRange(true)}
-            >
-              <Ionicons name="timer-outline" size={16} color={theme.textLight} />
-              <Text style={styles.timestampText}>
-                {timeRange ? `${timeRange.start} - ${timeRange.end}` : 'Add range'}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         <View style={styles.metaContainer}>
@@ -109,29 +82,11 @@ export default function AddEntryScreen({ navigation }) {
               {wordCount} {wordCount === 1 ? 'word' : 'words'}
             </Text>
             <Text style={styles.timestamp}>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              Created: {new Date(entry.date).toLocaleDateString()}
             </Text>
           </View>
         </View>
       </ScrollView>
-      
-      <FloatingTimestamp
-        eventTime={eventTime}
-        onTimeChange={setEventTime}
-        visible={showTimestamp}
-        onDismiss={() => setShowTimestamp(false)}
-      />
-      
-      <TimeRangeTracker
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        visible={showTimeRange}
-        onDismiss={() => setShowTimeRange(false)}
-      />
     </KeyboardAvoidingView>
   );
 }
@@ -199,43 +154,7 @@ const createStyles = (theme) => StyleSheet.create({
     lineHeight: 26,
     color: theme.text,
     fontWeight: '400',
-    minHeight: 200,
-    paddingBottom: 60
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    bottom: 16,
-    left: 24,
-    right: 24,
-    flexDirection: 'row',
-    gap: 4
-  },
-  timestampSuggestion: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border
-  },
-  timeRangeSuggestion: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border
-  },
-  timestampText: {
-    fontSize: 12,
-    color: theme.textLight,
-    marginLeft: 4
+    minHeight: 200
   },
   metaContainer: {
     margin: 16,
