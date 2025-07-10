@@ -43,6 +43,8 @@ export default function EntryCard({ entry, onPress, onDelete }) {
 
   const gradientColors = getGradientColors();
 
+  const styles = createStyles(theme);
+  
   const CardWrapper = gradientColors ? LinearGradient : View;
   const cardProps = gradientColors ? {
     colors: gradientColors,
@@ -95,7 +97,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 16,
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     elevation: 3
   },
   plainCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 24,
@@ -127,18 +129,18 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 13,
-    color: '#7F8C8D',
+    color: theme.textSecondary,
     fontWeight: '500'
   },
   eventTime: {
     fontSize: 11,
-    color: '#3498DB',
+    color: theme.accent,
     fontWeight: '500',
     marginTop: 2
   },
   timeRange: {
     fontSize: 11,
-    color: '#27AE60',
+    color: theme.success,
     fontWeight: '500',
     marginTop: 2
   },
@@ -162,17 +164,17 @@ const styles = StyleSheet.create({
   preview: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#2C3E50',
+    color: theme.text,
     marginBottom: 16
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#ECF0F1',
+    borderTopColor: theme.border,
     paddingTop: 8
   },
   wordCount: {
     fontSize: 12,
-    color: '#BDC3C7',
+    color: theme.textLight,
     textAlign: 'right'
   }
 });

@@ -30,7 +30,6 @@ export default function Sidebar({ visible, onClose, navigation }) {
     >
       <View style={styles.overlay}>
         <StatusBar backgroundColor="rgba(0,0,0,0.5)" />
-        <TouchableOpacity style={styles.backdrop} onPress={onClose} />
         
         <View style={[styles.sidebar, { backgroundColor: theme.surface }]}>
           <View style={styles.header}>
@@ -58,6 +57,8 @@ export default function Sidebar({ visible, onClose, navigation }) {
             <Text style={[styles.version, { color: theme.textLight }]}>Version 1.0</Text>
           </View>
         </View>
+        
+        <TouchableOpacity style={styles.backdrop} onPress={onClose} />
       </View>
     </Modal>
   );

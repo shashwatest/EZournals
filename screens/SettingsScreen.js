@@ -57,13 +57,13 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const themeOptions = [
+    { name: 'dark', label: 'Dark Mode', color: themes.dark.primary },
     { name: 'blue', label: 'Ocean Blue', color: themes.blue.primary },
     { name: 'green', label: 'Forest Green', color: themes.green.primary },
     { name: 'purple', label: 'Royal Purple', color: themes.purple.primary },
     { name: 'orange', label: 'Sunset Orange', color: themes.orange.primary },
     { name: 'pink', label: 'Rose Pink', color: themes.pink.primary },
-    { name: 'teal', label: 'Ocean Teal', color: themes.teal.primary },
-    { name: 'dark', label: 'Dark Mode', color: themes.dark.primary }
+    { name: 'teal', label: 'Ocean Teal', color: themes.teal.primary }
   ];
 
   return (
@@ -103,8 +103,9 @@ export default function SettingsScreen({ navigation }) {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Custom Tags</Text>
           <View style={styles.tagInputContainer}>
             <TextInput
-              style={[styles.tagInput, { borderColor: theme.border }]}
+              style={[styles.tagInput, { borderColor: theme.border, color: theme.text }]}
               placeholder="Create new tag"
+              placeholderTextColor={theme.textLight}
               value={newTag}
               onChangeText={setNewTag}
               onSubmitEditing={addNewTag}
