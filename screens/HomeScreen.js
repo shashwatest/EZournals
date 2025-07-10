@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getEntries, deleteEntry, getTheme } from '../utils/storage';
+import { getEntries, deleteEntry } from '../utils/storage';
+import { useTheme } from '../contexts/ThemeContext';
 import EntryCard from '../components/EntryCard';
 import Sidebar from '../components/Sidebar';
-import { theme, themes } from '../styles/theme';
 
 export default function HomeScreen({ navigation }) {
+  const { theme } = useTheme();
   const [entries, setEntries] = useState([]);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
-  const [currentTheme, setCurrentTheme] = useState('blue');
   const [showSidebar, setShowSidebar] = useState(false);
+
+  if (!theme) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   useEffect(() => {
     loadData();
@@ -21,10 +29,6 @@ export default function HomeScreen({ navigation }) {
   const loadData = async () => {
     try {
       const data = await getEntries();
-      const themeName = await getTheme();
-      
-      setCurrentTheme(themeName);
-      theme.colors = themes[themeName] || themes.blue;
       setEntries(data);
       
       const totalWords = data.reduce((sum, entry) => sum + (entry.content ? entry.content.split(' ').length : 0), 0);
@@ -60,30 +64,33 @@ export default function HomeScreen({ navigation }) {
     />
   );
 
+  const styles = createStyles(theme);
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
       
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
-        <View>
-          <Text style={[styles.greeting, { color: theme.colors.text }]}>Good {getTimeOfDay()}</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-            {stats.totalEntries} entries • {stats.totalWords} words
-          </Text>
-        </View>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={() => setShowSidebar(true)}
         >
-          <Ionicons name="menu-outline" size={24} color={theme.colors.text} />
+          <Ionicons name="menu-outline" size={24} color={theme.text} />
         </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.greeting, { color: theme.text }]}>EZournals</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            {stats.totalEntries} entries • {stats.totalWords} words
+          </Text>
+        </View>
+        <View style={styles.placeholder} />
       </View>
 
       {entries.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="book-outline" size={64} color={theme.colors.textLight} />
-          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>Your journal awaits</Text>
-          <Text style={[styles.emptySubtext, { color: theme.colors.textLight }]}>Capture your thoughts and memories</Text>
+          <Ionicons name="book-outline" size={64} color={theme.textLight} />
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Your journal awaits</Text>
+          <Text style={[styles.emptySubtext, { color: theme.textLight }]}>Capture your thoughts and memories</Text>
         </View>
       ) : (
         <FlatList
@@ -96,10 +103,10 @@ export default function HomeScreen({ navigation }) {
       )}
       
       <TouchableOpacity 
-        style={[styles.floatingAddButton, { backgroundColor: theme.colors.primary }]}
+        style={[styles.floatingAddButton, { backgroundColor: theme.accent }]}
         onPress={() => navigation.navigate('AddEntry')}
       >
-        <Ionicons name="create-outline" size={24} color={theme.colors.surface} />
+        <Ionicons name="create-outline" size={24} color="white" />
       </TouchableOpacity>
       
       <Sidebar 
@@ -118,7 +125,7 @@ const getTimeOfDay = () => {
   return 'evening';
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA'
@@ -146,6 +153,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#7F8C8D'
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center'
+  },
+  placeholder: {
+    width: 40
   },
   menuButton: {
     padding: 8,

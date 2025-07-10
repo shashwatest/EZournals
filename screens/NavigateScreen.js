@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, FlatList, Calendar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, getPredefinedTags } from '../utils/storage';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import EntryCard from '../components/EntryCard';
 
 export default function NavigateScreen({ navigation }) {
+  const { theme } = useTheme();
   const [entries, setEntries] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMood, setSelectedMood] = useState(null);
   const [viewMode, setViewMode] = useState('date'); // 'date', 'mood'
+
+  if (!theme) return null;
 
   useEffect(() => {
     loadEntries();
@@ -71,39 +74,41 @@ export default function NavigateScreen({ navigation }) {
     />
   );
 
+  const styles = createStyles(theme);
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
       
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Navigate</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Navigate</Text>
         <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-          <Text style={[styles.clearText, { color: theme.colors.accent }]}>Clear</Text>
+          <Text style={[styles.clearText, { color: theme.accent }]}>Clear</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
-        <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Quick Navigation</Text>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Navigation</Text>
           <View style={styles.quickDates}>
             {getQuickDates().map((item, index) => (
               <TouchableOpacity
                 key={index}
-                style={[styles.quickButton, { borderColor: theme.colors.border }]}
+                style={[styles.quickButton, { borderColor: theme.border }]}
                 onPress={() => filterByDate(item.date)}
               >
-                <Text style={[styles.quickButtonText, { color: theme.colors.text }]}>{item.label}</Text>
+                <Text style={[styles.quickButtonText, { color: theme.text }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Filter by Mood</Text>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Filter by Mood</Text>
           <View style={styles.moodGrid}>
             {moods.map((mood, index) => (
               <TouchableOpacity
@@ -121,13 +126,13 @@ export default function NavigateScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <View style={styles.resultsHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Results ({filteredEntries.length})
             </Text>
             {(selectedDate || selectedMood) && (
-              <Text style={[styles.filterInfo, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.filterInfo, { color: theme.textSecondary }]}>
                 {selectedDate ? `Date: ${selectedDate.toDateString()}` : `Mood: ${selectedMood}`}
               </Text>
             )}
@@ -144,8 +149,8 @@ export default function NavigateScreen({ navigation }) {
         style={styles.entriesList}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={48} color={theme.colors.textLight} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No entries found</Text>
+            <Ionicons name="search-outline" size={48} color={theme.textLight} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No entries found</Text>
           </View>
         }
       />
@@ -153,7 +158,7 @@ export default function NavigateScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA'

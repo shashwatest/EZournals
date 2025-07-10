@@ -1,9 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Sidebar({ visible, onClose, navigation }) {
+  const { theme } = useTheme();
+  
+  if (!theme) return null;
   const menuItems = [
     { icon: 'home-outline', label: 'Home', screen: 'Home' },
     { icon: 'calendar-outline', label: 'Navigate', screen: 'Navigate' },
@@ -29,11 +32,11 @@ export default function Sidebar({ visible, onClose, navigation }) {
         <StatusBar backgroundColor="rgba(0,0,0,0.5)" />
         <TouchableOpacity style={styles.backdrop} onPress={onClose} />
         
-        <View style={[styles.sidebar, { backgroundColor: theme.colors.surface }]}>
+        <View style={[styles.sidebar, { backgroundColor: theme.surface }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Journal</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Journal</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -44,15 +47,15 @@ export default function Sidebar({ visible, onClose, navigation }) {
                 style={styles.menuItem}
                 onPress={() => handleNavigation(item.screen)}
               >
-                <Ionicons name={item.icon} size={22} color={theme.colors.text} />
-                <Text style={[styles.menuLabel, { color: theme.colors.text }]}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={theme.colors.textLight} />
+                <Ionicons name={item.icon} size={22} color={theme.text} />
+                <Text style={[styles.menuLabel, { color: theme.text }]}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={theme.textLight} />
               </TouchableOpacity>
             ))}
           </View>
 
           <View style={styles.footer}>
-            <Text style={[styles.version, { color: theme.colors.textLight }]}>Version 1.0</Text>
+            <Text style={[styles.version, { color: theme.textLight }]}>Version 1.0</Text>
           </View>
         </View>
       </View>

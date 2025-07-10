@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { saveEntry } from '../utils/storage';
+import { useTheme } from '../contexts/ThemeContext';
 import TagInput from '../components/TagInput';
 import FloatingTimestamp from '../components/FloatingTimestamp';
 import TimeRangeTracker from '../components/TimeRangeTracker';
-import { theme } from '../styles/theme';
 
 export default function AddEntryScreen({ navigation }) {
+  const { theme } = useTheme();
   const [content, setContent] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -15,6 +16,8 @@ export default function AddEntryScreen({ navigation }) {
   const [showTimestamp, setShowTimestamp] = useState(false);
   const [timeRange, setTimeRange] = useState(null);
   const [showTimeRange, setShowTimeRange] = useState(false);
+
+  if (!theme) return null;
 
   const handleTextChange = (text) => {
     setContent(text);
@@ -40,16 +43,18 @@ export default function AddEntryScreen({ navigation }) {
     }
   };
 
+  const styles = createStyles(theme);
+
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Entry</Text>
         <TouchableOpacity 
@@ -68,13 +73,13 @@ export default function AddEntryScreen({ navigation }) {
           <TextInput
             style={styles.textInput}
             placeholder="What's on your mind?"
-            placeholderTextColor={theme.colors.textLight}
+            placeholderTextColor={theme.textLight}
             value={content}
             onChangeText={handleTextChange}
             multiline
             textAlignVertical="top"
             autoFocus
-            selectionColor={theme.colors.accent}
+            selectionColor={theme.accent}
           />
           
           <View style={styles.suggestionsContainer}>
@@ -82,7 +87,7 @@ export default function AddEntryScreen({ navigation }) {
               style={styles.timestampSuggestion}
               onPress={() => setShowTimestamp(true)}
             >
-              <Ionicons name="time-outline" size={16} color={theme.colors.textLight} />
+              <Ionicons name="time-outline" size={16} color={theme.textLight} />
               <Text style={styles.timestampText}>Time: {eventTime}</Text>
             </TouchableOpacity>
             
@@ -90,7 +95,7 @@ export default function AddEntryScreen({ navigation }) {
               style={styles.timeRangeSuggestion}
               onPress={() => setShowTimeRange(true)}
             >
-              <Ionicons name="timer-outline" size={16} color={theme.colors.textLight} />
+              <Ionicons name="timer-outline" size={16} color={theme.textLight} />
               <Text style={styles.timestampText}>
                 {timeRange ? `${timeRange.start} - ${timeRange.end}` : 'Add range'}
               </Text>
@@ -136,122 +141,134 @@ export default function AddEntryScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background
+    backgroundColor: theme.background
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.light
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: theme.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   backButton: {
-    padding: theme.spacing.sm
+    padding: 8
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text
+    color: theme.text
   },
   saveButton: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.borderRadius.sm
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: theme.accent,
+    borderRadius: 8
   },
   saveButtonDisabled: {
-    backgroundColor: theme.colors.border
+    backgroundColor: theme.border
   },
   saveButtonText: {
-    color: theme.colors.surface,
+    color: theme.surface,
     fontWeight: '600',
     fontSize: 16
   },
   saveButtonTextDisabled: {
-    color: theme.colors.textLight
+    color: theme.textLight
   },
   scrollContainer: {
     flex: 1
   },
   editorContainer: {
-    margin: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.light,
+    margin: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     minHeight: 200
   },
   textInput: {
-    padding: theme.spacing.lg,
+    padding: 24,
     fontSize: 17,
     lineHeight: 26,
-    color: theme.colors.text,
+    color: theme.text,
     fontWeight: '400',
     minHeight: 200,
     paddingBottom: 60
   },
   suggestionsContainer: {
     position: 'absolute',
-    bottom: theme.spacing.md,
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
+    bottom: 16,
+    left: 24,
+    right: 24,
     flexDirection: 'row',
-    gap: theme.spacing.xs
+    gap: 4
   },
   timestampSuggestion: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: theme.border
   },
   timeRangeSuggestion: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: theme.border
   },
   timestampText: {
     fontSize: 12,
-    color: theme.colors.textLight,
-    marginLeft: theme.spacing.xs
+    color: theme.textLight,
+    marginLeft: 4
   },
   metaContainer: {
-    margin: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.lg,
-    ...theme.shadows.light
+    margin: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border
+    borderTopColor: theme.border
   },
   wordCount: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
+    color: theme.textSecondary,
     fontWeight: '500'
   },
   timestamp: {
     fontSize: 14,
-    color: theme.colors.textLight
+    color: theme.textLight
   }
 });

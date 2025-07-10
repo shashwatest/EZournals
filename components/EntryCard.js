@@ -2,10 +2,13 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { getTagColor } from '../utils/storage';
 
 export default function EntryCard({ entry, onPress, onDelete }) {
+  const { theme } = useTheme();
+  
+  if (!theme) return null;
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -64,7 +67,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
           )}
         </View>
         <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
-          <Ionicons name="trash-outline" size={18} color={theme.colors.danger} />
+          <Ionicons name="trash-outline" size={18} color={theme.danger} />
         </TouchableOpacity>
       </View>
       

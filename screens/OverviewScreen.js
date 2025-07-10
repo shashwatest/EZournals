@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, getPredefinedTags } from '../utils/storage';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export default function OverviewScreen({ navigation }) {
+  const { theme } = useTheme();
   const [entries, setEntries] = useState([]);
   const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year'
   const [stats, setStats] = useState({});
+
+  if (!theme) return null;
 
   useEffect(() => {
     loadData();
@@ -89,37 +92,39 @@ export default function OverviewScreen({ navigation }) {
     { key: 'year', label: 'Year' }
   ];
 
+  const styles = createStyles(theme);
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
       
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Overview</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Overview</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
-        <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Time Range</Text>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Time Range</Text>
           <View style={styles.timeRangeButtons}>
             {timeRangeOptions.map(option => (
               <TouchableOpacity
                 key={option.key}
                 style={[
                   styles.timeRangeButton,
-                  { borderColor: theme.colors.border },
-                  timeRange === option.key && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }
+                  { borderColor: theme.border },
+                  timeRange === option.key && { backgroundColor: theme.accent, borderColor: theme.accent }
                 ]}
                 onPress={() => setTimeRange(option.key)}
               >
                 <Text style={[
                   styles.timeRangeText,
-                  { color: theme.colors.text },
-                  timeRange === option.key && { color: theme.colors.surface }
+                  { color: theme.text },
+                  timeRange === option.key && { color: theme.surface }
                 ]}>
                   {option.label}
                 </Text>
@@ -128,41 +133,41 @@ export default function OverviewScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Summary</Text>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Summary</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryNumber, { color: theme.colors.accent }]}>{stats.totalEntries || 0}</Text>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>Entries</Text>
+              <Text style={[styles.summaryNumber, { color: theme.accent }]}>{stats.totalEntries || 0}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Entries</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryNumber, { color: theme.colors.success }]}>{stats.totalWords || 0}</Text>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>Words</Text>
+              <Text style={[styles.summaryNumber, { color: theme.success }]}>{stats.totalWords || 0}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Words</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryNumber, { color: theme.colors.warning }]}>{stats.avgWordsPerEntry || 0}</Text>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>Avg/Entry</Text>
+              <Text style={[styles.summaryNumber, { color: theme.warning }]}>{stats.avgWordsPerEntry || 0}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Avg/Entry</Text>
             </View>
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Mood Distribution</Text>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Mood Distribution</Text>
           {stats.moodCounts && Object.entries(stats.moodCounts).map(([mood, data]) => (
             <View key={mood} style={styles.moodItem}>
               <View style={styles.moodHeader}>
                 <View style={styles.moodInfo}>
                   <View style={[styles.moodDot, { backgroundColor: data.color }]} />
-                  <Text style={[styles.moodName, { color: theme.colors.text }]}>{mood}</Text>
+                  <Text style={[styles.moodName, { color: theme.text }]}>{mood}</Text>
                 </View>
                 <View style={styles.moodStats}>
-                  <Text style={[styles.moodCount, { color: theme.colors.textSecondary }]}>{data.count}</Text>
-                  <Text style={[styles.moodPercentage, { color: theme.colors.textLight }]}>
+                  <Text style={[styles.moodCount, { color: theme.textSecondary }]}>{data.count}</Text>
+                  <Text style={[styles.moodPercentage, { color: theme.textLight }]}>
                     {getMoodPercentage(data.count)}%
                   </Text>
                 </View>
               </View>
-              <View style={[styles.moodBar, { backgroundColor: theme.colors.border }]}>
+              <View style={[styles.moodBar, { backgroundColor: theme.border }]}>
                 <View 
                   style={[
                     styles.moodBarFill, 
@@ -176,9 +181,9 @@ export default function OverviewScreen({ navigation }) {
 
         {stats.totalEntries === 0 && (
           <View style={styles.emptyState}>
-            <Ionicons name="analytics-outline" size={64} color={theme.colors.textLight} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No data for this period</Text>
-            <Text style={[styles.emptySubtext, { color: theme.colors.textLight }]}>
+            <Ionicons name="analytics-outline" size={64} color={theme.textLight} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No data for this period</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textLight }]}>
               Start writing to see your insights
             </Text>
           </View>
@@ -189,7 +194,7 @@ export default function OverviewScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA'

@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function ViewEntryScreen({ route, navigation }) {
+  const { theme } = useTheme();
   const { entry } = route.params;
+
+  if (!theme) return null;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -19,13 +22,15 @@ export default function ViewEntryScreen({ route, navigation }) {
   const wordCount = entry.content.split(' ').filter(word => word.length > 0).length;
   const readingTime = Math.ceil(wordCount / 200); // Average reading speed
 
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Entry Details</Text>
@@ -38,11 +43,11 @@ export default function ViewEntryScreen({ route, navigation }) {
           <Text style={styles.date}>{formatDate(entry.date)}</Text>
           <View style={styles.statsContainer}>
             <View style={styles.stat}>
-              <Ionicons name="document-text-outline" size={16} color={theme.colors.textSecondary} />
+              <Ionicons name="document-text-outline" size={16} color={theme.textSecondary} />
               <Text style={styles.statText}>{wordCount} words</Text>
             </View>
             <View style={styles.stat}>
-              <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
+              <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
               <Text style={styles.statText}>{readingTime} min read</Text>
             </View>
           </View>
@@ -56,22 +61,26 @@ export default function ViewEntryScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background
+    backgroundColor: theme.background
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.light
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: theme.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   backButton: {
-    padding: theme.spacing.sm
+    padding: 8
   },
   headerInfo: {
     flex: 1,
@@ -80,7 +89,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text
+    color: theme.text
   },
   placeholder: {
     width: 40
@@ -89,45 +98,53 @@ const styles = StyleSheet.create({
     flex: 1
   },
   metaContainer: {
-    backgroundColor: theme.colors.surface,
-    margin: theme.spacing.md,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.light
+    backgroundColor: theme.surface,
+    margin: 16,
+    padding: 24,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   date: {
     fontSize: 16,
-    color: theme.colors.text,
+    color: theme.text,
     fontWeight: '500',
     textAlign: 'center',
-    marginBottom: theme.spacing.md
+    marginBottom: 16
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: theme.spacing.lg
+    gap: 24
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs
+    gap: 4
   },
   statText: {
     fontSize: 14,
-    color: theme.colors.textSecondary
+    color: theme.textSecondary
   },
   contentContainer: {
-    backgroundColor: theme.colors.surface,
-    marginHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.light
+    backgroundColor: theme.surface,
+    marginHorizontal: 16,
+    marginBottom: 32,
+    padding: 24,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   content: {
     fontSize: 17,
     lineHeight: 28,
-    color: theme.colors.text,
+    color: theme.text,
     fontWeight: '400'
   }
 });

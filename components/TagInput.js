@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getPredefinedTags, getUserTags, saveUserTag, getTagColor } from '../utils/storage';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function TagInput({ selectedTags, onTagsChange }) {
+  const { theme } = useTheme();
   const [predefinedTags, setPredefinedTags] = useState([]);
   const [userTags, setUserTags] = useState([]);
+
+  if (!theme) return null;
 
 
   useEffect(() => {
@@ -32,6 +35,8 @@ export default function TagInput({ selectedTags, onTagsChange }) {
 
 
   const allTags = [...predefinedTags.map(t => t.name), ...userTags];
+
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -61,43 +66,43 @@ export default function TagInput({ selectedTags, onTagsChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.md
+    marginBottom: 16
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm
+    color: theme.text,
+    marginBottom: 8
   },
   selectedTags: {
-    marginBottom: theme.spacing.sm
+    marginBottom: 8
   },
   selectedTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.xs
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 4
   },
   selectedTagText: {
     color: 'white',
     fontSize: 14,
-    marginRight: theme.spacing.xs,
+    marginRight: 4,
     fontWeight: '500'
   },
   tagsList: {
-    marginBottom: theme.spacing.sm
+    marginBottom: 8
   },
   tag: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.xs
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 4
   },
   tagText: {
     fontSize: 14,

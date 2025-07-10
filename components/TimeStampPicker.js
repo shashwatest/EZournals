@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function TimeStampPicker({ eventTime, onTimeChange }) {
+  const { theme } = useTheme();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [customTime, setCustomTime] = useState('');
+
+  if (!theme) return null;
 
   useEffect(() => {
     if (!eventTime) {
@@ -44,6 +47,8 @@ export default function TimeStampPicker({ eventTime, onTimeChange }) {
     }
   };
 
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Time of event</Text>
@@ -56,7 +61,7 @@ export default function TimeStampPicker({ eventTime, onTimeChange }) {
         <Ionicons 
           name={showTimePicker ? "chevron-up" : "chevron-down"} 
           size={20} 
-          color={theme.colors.textSecondary} 
+          color={theme.textSecondary} 
         />
       </TouchableOpacity>
 
@@ -90,72 +95,72 @@ export default function TimeStampPicker({ eventTime, onTimeChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.md
+    marginBottom: 16
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm
+    color: theme.text,
+    marginBottom: 8
   },
   selector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.surface
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 16,
+    backgroundColor: theme.surface
   },
   selectorText: {
     fontSize: 16,
-    color: theme.colors.text
+    color: theme.text
   },
   options: {
-    marginTop: theme.spacing.xs,
+    marginTop: 4,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.sm,
-    backgroundColor: theme.colors.surface
+    borderColor: theme.border,
+    borderRadius: 8,
+    backgroundColor: theme.surface
   },
   option: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: 8,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border
+    borderBottomColor: theme.border
   },
   optionText: {
     fontSize: 16,
-    color: theme.colors.text
+    color: theme.text
   },
   customTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.sm
+    paddingHorizontal: 8,
+    paddingVertical: 8
   },
   customTimeInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     fontSize: 14
   },
   setTimeButton: {
-    marginLeft: theme.spacing.sm,
-    backgroundColor: theme.colors.accent,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm
+    marginLeft: 8,
+    backgroundColor: theme.accent,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8
   },
   setTimeButtonText: {
-    color: theme.colors.surface,
+    color: theme.surface,
     fontSize: 14,
     fontWeight: '600'
   }

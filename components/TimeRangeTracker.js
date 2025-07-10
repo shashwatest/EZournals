@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible, onDismiss }) {
+  const { theme } = useTheme();
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
   const [fadeAnim] = useState(new Animated.Value(0));
+
+  if (!theme) return null;
 
   useEffect(() => {
     if (visible) {
@@ -50,20 +53,22 @@ export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible
 
   if (!visible) return null;
 
+  const styles = createStyles(theme);
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>Track Time Range</Text>
           <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
-            <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+            <Ionicons name="close" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {!isTracking ? (
           <View style={styles.optionsContainer}>
             <TouchableOpacity style={styles.startButton} onPress={startTracking}>
-              <Ionicons name="play" size={20} color={theme.colors.surface} />
+              <Ionicons name="play" size={20} color={theme.surface} />
               <Text style={styles.startButtonText}>Start Now</Text>
             </TouchableOpacity>
             
@@ -95,7 +100,7 @@ export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible
               <Text style={styles.ongoingText}>Status: Ongoing</Text>
             </View>
             <TouchableOpacity style={styles.stopButton} onPress={stopTracking}>
-              <Ionicons name="stop" size={20} color={theme.colors.surface} />
+              <Ionicons name="stop" size={20} color={theme.surface} />
               <Text style={styles.stopButtonText}>Stop</Text>
             </TouchableOpacity>
           </View>
@@ -105,33 +110,37 @@ export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     position: 'absolute',
     top: 100,
-    left: theme.spacing.md,
-    right: theme.spacing.md,
+    left: 16,
+    right: 16,
     zIndex: 1000
   },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    ...theme.shadows.medium
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md
+    marginBottom: 16
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text
+    color: theme.text
   },
   closeButton: {
-    padding: theme.spacing.xs
+    padding: 4
   },
   optionsContainer: {
     alignItems: 'center'
@@ -139,64 +148,64 @@ const styles = StyleSheet.create({
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.success,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md
+    backgroundColor: theme.success,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 16
   },
   startButtonText: {
-    color: theme.colors.surface,
+    color: theme.surface,
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: theme.spacing.sm
+    marginLeft: 8
   },
   quickOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: theme.spacing.xs
+    gap: 4
   },
   quickOption: {
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: theme.border
   },
   quickOptionText: {
     fontSize: 12,
-    color: theme.colors.text
+    color: theme.text
   },
   trackingContainer: {
     alignItems: 'center'
   },
   trackingInfo: {
     alignItems: 'center',
-    marginBottom: theme.spacing.md
+    marginBottom: 16
   },
   trackingText: {
     fontSize: 16,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs
+    color: theme.text,
+    marginBottom: 4
   },
   ongoingText: {
     fontSize: 14,
-    color: theme.colors.success,
+    color: theme.success,
     fontWeight: '500'
   },
   stopButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.danger,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md
+    backgroundColor: theme.danger,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12
   },
   stopButtonText: {
-    color: theme.colors.surface,
+    color: theme.surface,
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: theme.spacing.sm
+    marginLeft: 8
   }
 });

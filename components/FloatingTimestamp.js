@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function FloatingTimestamp({ eventTime, onTimeChange, visible, onDismiss }) {
+  const { theme } = useTheme();
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customTime, setCustomTime] = useState('');
   const [fadeAnim] = useState(new Animated.Value(0));
+
+  if (!theme) return null;
 
   useEffect(() => {
     if (visible && !eventTime) {
@@ -60,13 +63,15 @@ export default function FloatingTimestamp({ eventTime, onTimeChange, visible, on
 
   if (!visible) return null;
 
+  const styles = createStyles(theme);
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>When did this happen?</Text>
           <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
-            <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+            <Ionicons name="close" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -109,74 +114,78 @@ export default function FloatingTimestamp({ eventTime, onTimeChange, visible, on
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     position: 'absolute',
     top: 100,
-    left: theme.spacing.md,
-    right: theme.spacing.md,
+    left: 16,
+    right: 16,
     zIndex: 1000
   },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    ...theme.shadows.medium
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm
+    marginBottom: 8
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text
+    color: theme.text
   },
   closeButton: {
-    padding: theme.spacing.xs
+    padding: 4
   },
   optionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: theme.spacing.xs
+    gap: 4
   },
   option: {
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: theme.border
   },
   optionText: {
     fontSize: 14,
-    color: theme.colors.text
+    color: theme.text
   },
   customInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing.sm,
-    gap: theme.spacing.xs
+    marginTop: 8,
+    gap: 4
   },
   customInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     fontSize: 14
   },
   setButton: {
-    backgroundColor: theme.colors.accent,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm
+    backgroundColor: theme.accent,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8
   },
   setButtonText: {
-    color: theme.colors.surface,
+    color: theme.surface,
     fontSize: 14,
     fontWeight: '600'
   }
