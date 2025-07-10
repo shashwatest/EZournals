@@ -5,6 +5,7 @@ import { getEntries, deleteEntry } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import EntryCard from '../components/EntryCard';
 import Sidebar from '../components/Sidebar';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
@@ -16,11 +17,7 @@ export default function HomeScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!theme) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' }}>
-        <Text>Loading...</Text>
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   useEffect(() => {

@@ -10,6 +10,17 @@ export default function RichTextRenderer({ content, style }) {
   const parseText = (text) => {
     const lines = text.split('\n');
     return lines.map((line, lineIndex) => {
+      // Handle headers
+      if (line.startsWith('# ')) {
+        return (
+          <Text key={lineIndex} style={[style, { color: theme.text, fontSize: 24, fontWeight: 'bold' }]}>
+            {line.substring(2)}
+            {lineIndex < lines.length - 1 && '\n'}
+          </Text>
+        );
+      }
+      
+      // Handle bullet points
       if (line.startsWith('• ')) {
         return (
           <Text key={lineIndex} style={[style, { color: theme.text }]}>

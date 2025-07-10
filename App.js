@@ -27,7 +27,39 @@ function AppNavigator() {
           headerShown: false,
           cardStyle: { backgroundColor: theme.background },
           gestureEnabled: true,
-          gestureDirection: 'horizontal'
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: ({ current, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+                opacity: current.progress.interpolate({
+                  inputRange: [0, 0.3, 1],
+                  outputRange: [0, 0.5, 1],
+                }),
+              },
+            };
+          },
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 250,
+              },
+            },
+          },
         }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />
