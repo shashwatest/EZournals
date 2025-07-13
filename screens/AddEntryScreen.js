@@ -7,6 +7,7 @@ import TagInput from '../components/TagInput';
 import FloatingTimestamp from '../components/FloatingTimestamp';
 import TimeRangeTracker from '../components/TimeRangeTracker';
 import RichTextEditor from '../components/RichTextEditor';
+import AudioPlayer from '../components/AudioPlayer';
 
 export default function AddEntryScreen({ navigation }) {
   const { theme } = useTheme();
@@ -17,6 +18,7 @@ export default function AddEntryScreen({ navigation }) {
   const [showTimestamp, setShowTimestamp] = useState(false);
   const [timeRange, setTimeRange] = useState(null);
   const [showTimeRange, setShowTimeRange] = useState(false);
+  const [audioUri, setAudioUri] = useState(null);
 
   if (!theme) return null;
 
@@ -36,7 +38,8 @@ export default function AddEntryScreen({ navigation }) {
         content: content.trim(),
         tags: selectedTags,
         eventTime: eventTime,
-        timeRange: timeRange
+        timeRange: timeRange,
+        audioUri: audioUri
       });
       navigation.goBack();
     } catch (error) {
@@ -75,6 +78,7 @@ export default function AddEntryScreen({ navigation }) {
             value={content}
             onChangeText={handleTextChange}
             placeholder="What's on your mind?"
+            onAudioRecorded={setAudioUri}
           />
           
           <View style={styles.suggestionsContainer}>
@@ -99,6 +103,13 @@ export default function AddEntryScreen({ navigation }) {
         </View>
 
         <View style={styles.metaContainer}>
+          {audioUri && (
+            <View style={styles.audioContainer}>
+              <Text style={styles.audioLabel}>Audio Recording:</Text>
+              <AudioPlayer audioUri={audioUri} />
+            </View>
+          )}
+          
           <TagInput 
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
@@ -265,5 +276,14 @@ const createStyles = (theme) => StyleSheet.create({
   timestamp: {
     fontSize: 14,
     color: theme.textLight
+  },
+  audioContainer: {
+    marginBottom: 16
+  },
+  audioLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.text,
+    marginBottom: 8
   }
 });

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import RichTextRenderer from '../components/RichTextRenderer';
+import AudioPlayer from '../components/AudioPlayer';
 
 export default function ViewEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
@@ -61,6 +62,13 @@ export default function ViewEntryScreen({ route, navigation }) {
         
         <View style={styles.contentContainer}>
           <RichTextRenderer content={entry.content} style={styles.content} />
+          
+          {entry.audioUri && (
+            <View style={styles.audioContainer}>
+              <Text style={styles.audioLabel}>Audio Recording:</Text>
+              <AudioPlayer audioUri={entry.audioUri} />
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -155,5 +163,14 @@ const createStyles = (theme) => StyleSheet.create({
     lineHeight: 28,
     color: theme.text,
     fontWeight: '400'
+  },
+  audioContainer: {
+    marginTop: 16
+  },
+  audioLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.text,
+    marginBottom: 8
   }
 });

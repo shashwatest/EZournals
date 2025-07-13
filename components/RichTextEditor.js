@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import AudioRecorder from './AudioRecorder';
 
-export default function RichTextEditor({ value, onChangeText, placeholder }) {
+export default function RichTextEditor({ value, onChangeText, placeholder, onAudioRecorded }) {
   const { theme } = useTheme();
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [activeFormats, setActiveFormats] = useState({
@@ -32,14 +33,31 @@ export default function RichTextEditor({ value, onChangeText, placeholder }) {
       
       onChangeText(newText);
     } else {
-      // Insert markers and toggle state
+      // Toggle state and insert appropriate markers
+      const isActive = activeFormats[format];
       const beforeText = value.substring(0, start);
       const afterText = value.substring(start);
       
-      if (format === 'bold') {
-        onChangeText(beforeText + '**' + afterText);
-      } else if (format === 'italic') {
-        onChangeText(beforeText + '*' + afterText);
+      if (!isActive) {
+        // Turn on: insert opening markers
+        if (format === 'bold') {
+          onChangeText(beforeText + '**' + afterText);
+        } else if (format === 'italic') {
+          onChangeText(beforeText + '*' + afterText);
+        }
+      } else {
+        // Turn off: only insert closing markers if there's content after the opening markers
+        const marker = format === 'bold' ? '**' : '*';
+        const lastMarkerIndex = beforeText.lastIndexOf(marker);
+        
+        if (lastMarkerIndex !== -1 && start > lastMarkerIndex + marker.length) {
+          // There's content between markers, add closing marker
+          if (format === 'bold') {
+            onChangeText(beforeText + '**' + afterText);
+          } else if (format === 'italic') {
+            onChangeText(beforeText + '*' + afterText);
+          }
+        }
       }
       
       setActiveFormats(prev => ({
@@ -107,6 +125,7 @@ export default function RichTextEditor({ value, onChangeText, placeholder }) {
         >
           <Ionicons name="list" size={16} color={theme.text} />
         </TouchableOpacity>
+        <AudioRecorder onAudioRecorded={onAudioRecorded} />
       </View>
       
       <TextInput
