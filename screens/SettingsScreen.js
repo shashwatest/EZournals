@@ -90,6 +90,14 @@ export default function SettingsScreen({ navigation }) {
         
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
+          <TouchableOpacity
+            style={styles.appearanceOption}
+            onPress={() => navigation.navigate('UISettings')}
+          >
+            <Ionicons name="text-outline" size={24} color={theme.textSecondary} />
+            <Text style={[styles.appearanceOptionText, { color: theme.text }]}>Display Settings</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
           <View style={styles.themeGrid}>
             {themeOptions.map(option => (
               <TouchableOpacity
@@ -168,18 +176,6 @@ export default function SettingsScreen({ navigation }) {
               </View>
             </View>
           )}
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Data</Text>
-          <TouchableOpacity
-            style={styles.dataOption}
-            onPress={() => navigation.navigate('RecycleBin')}
-          >
-            <Ionicons name="trash-outline" size={24} color={theme.textSecondary} />
-            <Text style={[styles.dataOptionText, { color: theme.text }]}>Recycle Bin</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
-          </TouchableOpacity>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
@@ -380,14 +376,16 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 4
   },
-  dataOption: {
+
+  appearanceOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 8,
-    borderRadius: 8
+    borderRadius: 8,
+    marginBottom: 16
   },
-  dataOptionText: {
+  appearanceOptionText: {
     flex: 1,
     fontSize: 16,
     marginLeft: 16

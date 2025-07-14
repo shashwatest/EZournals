@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { UISettingsProvider } from './contexts/UISettingsContext';
 import HomeScreen from './screens/HomeScreen';
 import AddEntryScreen from './screens/AddEntryScreen';
 import EditEntryScreen from './screens/EditEntryScreen';
@@ -11,6 +12,7 @@ import NavigateScreen from './screens/NavigateScreen';
 import OverviewScreen from './screens/OverviewScreen';
 import CustomThemeScreen from './screens/CustomThemeScreen';
 import RecycleBinScreen from './screens/RecycleBinScreen';
+import UISettingsScreen from './screens/UISettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -73,6 +75,7 @@ function AppNavigator() {
         <Stack.Screen name="Overview" component={OverviewScreen} />
         <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
         <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
+        <Stack.Screen name="UISettings" component={UISettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -81,7 +84,9 @@ function AppNavigator() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppNavigator />
+      <UISettingsProvider>
+        <AppNavigator />
+      </UISettingsProvider>
     </ThemeProvider>
   );
 }

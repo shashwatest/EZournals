@@ -3,18 +3,24 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar, T
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, deleteEntry, getRecycleBin, saveToRecycleBin } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUISettings } from '../contexts/UISettingsContext';
 import EntryCard from '../components/EntryCard';
 import Sidebar from '../components/Sidebar';
 import LoadingScreen from '../components/LoadingScreen';
 
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
+  const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
   const [entries, setEntries] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
   const [showSidebar, setShowSidebar] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const fontSizes = getFontSizes();
+  const fontFamily = getFontFamily();
+  const spacing = getSpacing();
 
   if (!theme) {
     return <LoadingScreen />;
@@ -26,11 +32,31 @@ export default function HomeScreen({ navigation }) {
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    if (entries.length > 0) {
+      const sortedEntries = sortEntries(entries, settings.sortBy);
+      setFilteredEntries(sortedEntries);
+    }
+  }, [settings.sortBy, entries]);
+
+  const sortEntries = (entries, sortBy) => {
+    switch (sortBy) {
+      case 'oldest':
+        return [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+      case 'alphabetical':
+        return [...entries].sort((a, b) => a.content.localeCompare(b.content));
+      case 'newest':
+      default:
+        return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+  };
+
   const loadData = async () => {
     try {
       const data = await getEntries();
-      setEntries(data);
-      setFilteredEntries(data);
+      const sortedData = sortEntries(data, settings.sortBy);
+      setEntries(sortedData);
+      setFilteredEntries(sortedData);
       
       const totalWords = data.reduce((sum, entry) => sum + (entry.content ? entry.content.split(' ').length : 0), 0);
       setStats({ totalEntries: data.length, totalWords });
@@ -53,7 +79,7 @@ export default function HomeScreen({ navigation }) {
       entry.content.toLowerCase().includes(query.toLowerCase()) ||
       (entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
     );
-    setFilteredEntries(filtered);
+    setFilteredEntries(sortEntries(filtered, settings.sortBy));
   };
 
   const handleDelete = async (id) => {
@@ -78,7 +104,7 @@ export default function HomeScreen({ navigation }) {
     />
   );
 
-  const styles = createStyles(theme);
+  const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -141,6 +167,9 @@ export default function HomeScreen({ navigation }) {
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          numColumns={settings.cardLayout === 'grid' ? 2 : 1}
+          key={settings.cardLayout}
+          columnWrapperStyle={settings.cardLayout === 'grid' ? styles.gridRow : null}
         />
       )}
       
@@ -167,7 +196,7 @@ const getTimeOfDay = () => {
   return 'evening';
 };
 
-const createStyles = (theme) => StyleSheet.create({
+const createStyles = (theme, fontSizes, fontFamily, spacing, settings) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA'
@@ -187,14 +216,16 @@ const createStyles = (theme) => StyleSheet.create({
     elevation: 3
   },
   greeting: {
-    fontSize: 24,
+    fontSize: fontSizes.header,
     fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 4
+    color: theme.text,
+    marginBottom: 4,
+    fontFamily: fontFamily
   },
   subtitle: {
-    fontSize: 14,
-    color: '#7F8C8D'
+    fontSize: fontSizes.subtitle,
+    color: theme.textSecondary,
+    fontFamily: fontFamily
   },
   headerCenter: {
     flex: 1,
@@ -225,8 +256,13 @@ const createStyles = (theme) => StyleSheet.create({
     elevation: 5
   },
   listContent: {
-    paddingTop: 16,
-    paddingBottom: 32
+    paddingTop: spacing.card,
+    paddingBottom: spacing.card * 2,
+    paddingHorizontal: settings.cardLayout === 'grid' ? 8 : 0
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 8
   },
   emptyState: {
     flex: 1,

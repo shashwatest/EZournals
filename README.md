@@ -35,10 +35,25 @@ A simple React Native journal app built with Expo.
 - `screens/` - All app screens
 - `utils/storage.js` - Data persistence functions
 
+## Customization
+
+### Custom Fonts
+To add custom fonts:
+1. Download font files (.ttf) and place them in `assets/fonts/`
+2. Uncomment font loading code in `utils/fonts.js`
+3. Install expo-font: `npm install expo-font`
+4. Update font names in `contexts/UISettingsContext.js`
+
+### Display Settings
+- Text size: Small to Extra Large
+- Font family: System, Serif, Monospace, and custom fonts
+- Card layout: List, Grid, or Compact view
+- Entry sorting: Newest, Oldest, or Alphabetical
+- Spacing: Tight, Normal, or Loose
+
 ## Next Features to Add
 - Search entries
 - Edit existing entries
 - Categories/tags
 - Export entries
-- Dark mode
 - Entry photos

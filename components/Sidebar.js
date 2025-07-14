@@ -11,6 +11,7 @@ export default function Sidebar({ visible, onClose, navigation }) {
     { icon: 'home-outline', label: 'Home', screen: 'Home' },
     { icon: 'calendar-outline', label: 'Navigate', screen: 'Navigate' },
     { icon: 'analytics-outline', label: 'Overview', screen: 'Overview' },
+    { icon: 'trash-outline', label: 'Recycle Bin', screen: 'RecycleBin' },
     { icon: 'settings-outline', label: 'Settings', screen: 'Settings' }
   ];
 

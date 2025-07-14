@@ -1,15 +1,25 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUISettings } from '../contexts/UISettingsContext';
 import { getTagColor } from '../utils/storage';
 import RichTextRenderer from './RichTextRenderer';
 
 export default function EntryCard({ entry, onPress, onDelete }) {
   const { theme } = useTheme();
+  const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
   
   if (!theme) return null;
+  
+  const fontSizes = getFontSizes();
+  const fontFamily = getFontFamily();
+  const spacing = getSpacing();
+  
+  const screenWidth = Dimensions.get('window').width;
+  const isGrid = settings.cardLayout === 'grid';
+  const cardWidth = isGrid ? (screenWidth - 48) / 2 : screenWidth - 32; // 48 = margins + padding for grid, 32 for list
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -44,7 +54,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
 
   const gradientColors = getGradientColors();
 
-  const styles = createStyles(theme);
+  const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth);
   
   const CardWrapper = gradientColors ? LinearGradient : View;
   const cardProps = gradientColors ? {
@@ -58,7 +68,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
       <CardWrapper {...cardProps}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerContent}>
           <Text style={styles.date}>{formatDate(entry.date)}</Text>
           {entry.eventTime && (
             <Text style={styles.eventTime}>{getEventTimeText(entry.eventTime)}</Text>
@@ -76,7 +86,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
       
       <View style={styles.previewContainer}>
         <RichTextRenderer 
-          content={entry.content.substring(0, 200) + (entry.content.length > 200 ? '...' : '')} 
+          content={entry.content.substring(0, isGrid ? 80 : 200) + (entry.content.length > (isGrid ? 80 : 200) ? '...' : '')} 
           style={styles.preview} 
         />
       </View>
@@ -85,29 +95,34 @@ export default function EntryCard({ entry, onPress, onDelete }) {
   );
 }
 
-const createStyles = (theme) => StyleSheet.create({
+const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth) => StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 24,
+    backgroundColor: 'transparent',
+    marginHorizontal: isGrid ? 8 : 16,
+    marginBottom: isGrid ? 12 : 16,
+    padding: isGrid ? 16 : spacing.padding,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
+    width: isGrid ? cardWidth : undefined,
+    minHeight: isGrid ? cardWidth * 0.8 : undefined
   },
   plainCard: {
     backgroundColor: theme.surface,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 24,
+    marginHorizontal: isGrid ? 8 : 16,
+    marginBottom: isGrid ? 12 : 16,
+    padding: isGrid ? 16 : spacing.padding,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
+    width: isGrid ? cardWidth : undefined,
+    minHeight: isGrid ? cardWidth * 0.8 : undefined
   },
   header: {
     flexDirection: 'row',
@@ -116,21 +131,24 @@ const createStyles = (theme) => StyleSheet.create({
     marginBottom: 8
   },
   date: {
-    fontSize: 13,
+    fontSize: fontSizes.subtitle,
     color: theme.textSecondary,
-    fontWeight: '500'
+    fontWeight: '500',
+    fontFamily: fontFamily
   },
   eventTime: {
-    fontSize: 11,
+    fontSize: fontSizes.subtitle * 0.85,
     color: theme.accent,
     fontWeight: '500',
-    marginTop: 2
+    marginTop: 2,
+    fontFamily: fontFamily
   },
   timeRange: {
-    fontSize: 11,
+    fontSize: fontSizes.subtitle * 0.85,
     color: theme.success,
     fontWeight: '500',
-    marginTop: 2
+    marginTop: 2,
+    fontFamily: fontFamily
   },
   tagsContainer: {
     marginBottom: 8
@@ -150,12 +168,17 @@ const createStyles = (theme) => StyleSheet.create({
     padding: 4
   },
   previewContainer: {
-    marginBottom: 16
+    flex: isGrid ? 1 : undefined,
+    marginBottom: isGrid ? 0 : 16
   },
   preview: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: theme.text
+    fontSize: isGrid ? fontSizes.base * 0.85 : fontSizes.base,
+    lineHeight: isGrid ? fontSizes.base * 1.3 : fontSizes.base * spacing.text,
+    color: theme.text,
+    fontFamily: fontFamily
+  },
+  headerContent: {
+    flex: 1
   },
   footer: {
     borderTopWidth: 1,
