@@ -1,4 +1,4 @@
-# Journal Mobile App
+# EZournals
 
 A simple React Native journal app built with Expo.
 

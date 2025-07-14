@@ -3,6 +3,8 @@ import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import AudioRecorder from './AudioRecorder';
+import TimestampButton from './TimestampButton';
+import TimeRangeButton from './TimeRangeButton';
 
 export default function RichTextEditor({ value, onChangeText, placeholder, onAudioRecorded }) {
   const { theme } = useTheme();
@@ -96,6 +98,20 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
     }, 10);
   };
 
+  const insertTimestamp = (timestamp) => {
+    const { start } = selection;
+    const beforeText = value.substring(0, start);
+    const afterText = value.substring(start);
+    onChangeText(beforeText + timestamp + afterText);
+  };
+
+  const insertTimeRange = (timeRange) => {
+    const { start } = selection;
+    const beforeText = value.substring(0, start);
+    const afterText = value.substring(start);
+    onChangeText(beforeText + timeRange + afterText);
+  };
+
   const styles = createStyles(theme);
 
   return (
@@ -125,6 +141,8 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
         >
           <Ionicons name="list" size={16} color={theme.text} />
         </TouchableOpacity>
+        <TimestampButton onInsertTimestamp={insertTimestamp} />
+        <TimeRangeButton onInsertTimeRange={insertTimeRange} value={value} onChangeText={onChangeText} />
         <AudioRecorder onAudioRecorded={onAudioRecorded} />
       </View>
       
@@ -156,15 +174,17 @@ const createStyles = (theme) => StyleSheet.create({
   },
   toolbar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: theme.border
+    borderBottomColor: theme.border,
+    gap: 4
   },
   toolButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    marginRight: 8,
+    marginBottom: 4,
     borderRadius: 4,
     backgroundColor: theme.background
   },

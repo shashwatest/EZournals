@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import RichTextRenderer from '../components/RichTextRenderer';
 import AudioPlayer from '../components/AudioPlayer';
+import { getTagColor } from '../utils/storage';
 
 export default function ViewEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
@@ -62,6 +63,19 @@ export default function ViewEntryScreen({ route, navigation }) {
         
         <View style={styles.contentContainer}>
           <RichTextRenderer content={entry.content} style={styles.content} />
+          
+          {entry.tags && entry.tags.length > 0 && (
+            <View style={styles.tagsContainer}>
+              <Text style={styles.tagsLabel}>Tags:</Text>
+              <View style={styles.tagsWrapper}>
+                {entry.tags.map(tag => (
+                  <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '20', borderColor: getTagColor(tag) }]}>
+                    <Text style={[styles.tagText, { color: getTagColor(tag) }]}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
           
           {entry.audioUri && (
             <View style={styles.audioContainer}>
@@ -172,5 +186,32 @@ const createStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
     color: theme.text,
     marginBottom: 8
+  },
+  tagsContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.border
+  },
+  tagsLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.text,
+    marginBottom: 8
+  },
+  tagsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  tag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '500'
   }
 });

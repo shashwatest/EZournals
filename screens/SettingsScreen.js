@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserTags, saveUserTag, deleteUserTag } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { themes } from '../styles/theme';
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, currentTheme, changeTheme, isLoading } = useTheme();
+  const { theme, currentTheme, customThemes, changeTheme, isLoading, reloadThemes } = useTheme();
   const [userTags, setUserTags] = useState([]);
   const [newTag, setNewTag] = useState('');
 
@@ -56,14 +57,21 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
+  const deleteCustomTheme = async (themeId) => {
+    const updatedThemes = customThemes.filter(t => t.id !== themeId);
+    await AsyncStorage.setItem('customThemes', JSON.stringify(updatedThemes));
+    if (currentTheme === themeId) {
+      await changeTheme('oceanTeal');
+    }
+    await reloadThemes();
+  };
+
+  const editCustomTheme = (themeData) => {
+    navigation.navigate('CustomTheme', { editTheme: themeData });
+  };
+
   const themeOptions = [
-    { name: 'dark', label: 'Dark Mode', color: themes.dark.primary },
-    { name: 'blue', label: 'Ocean Blue', color: themes.blue.primary },
-    { name: 'green', label: 'Forest Green', color: themes.green.primary },
-    { name: 'purple', label: 'Royal Purple', color: themes.purple.primary },
-    { name: 'orange', label: 'Sunset Orange', color: themes.orange.primary },
-    { name: 'pink', label: 'Rose Pink', color: themes.pink.primary },
-    { name: 'teal', label: 'Ocean Teal', color: themes.teal.primary }
+    { name: 'oceanTeal', label: 'Ocean Teal', color: themes.oceanTeal.primary }
   ];
 
   return (
@@ -96,6 +104,38 @@ export default function SettingsScreen({ navigation }) {
                 )}
               </TouchableOpacity>
             ))}
+            
+            {customThemes.map((customTheme) => (
+              <View key={customTheme.id} style={[styles.themeOption, { borderColor: theme.border }, currentTheme === customTheme.id && { borderColor: theme.accent, backgroundColor: theme.accent + '10' }]}>
+                <TouchableOpacity 
+                  style={styles.themeMain}
+                  onPress={() => changeTheme(customTheme.id)}
+                >
+                  <View style={[styles.themeColor, { backgroundColor: customTheme.primary }]} />
+                  <Text style={[styles.themeLabel, { color: theme.text }]}>{customTheme.name}</Text>
+                  {currentTheme === customTheme.id && (
+                    <Ionicons name="checkmark" size={20} color={theme.accent} />
+                  )}
+                </TouchableOpacity>
+                <View style={styles.themeActions}>
+                  <TouchableOpacity onPress={() => editCustomTheme(customTheme)} style={styles.actionButton}>
+                    <Ionicons name="pencil" size={16} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteCustomTheme(customTheme.id)} style={styles.actionButton}>
+                    <Ionicons name="trash" size={16} color={theme.danger} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+            
+            <TouchableOpacity
+              style={[styles.themeOption, styles.createThemeOption, { borderColor: theme.border }]}
+              onPress={() => navigation.navigate('CustomTheme')}
+            >
+              <Ionicons name="add-circle" size={24} color={theme.primary} />
+              <Text style={[styles.themeLabel, { color: theme.text }]}>Create Custom Theme</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -131,9 +171,21 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Data</Text>
+          <TouchableOpacity
+            style={styles.dataOption}
+            onPress={() => navigation.navigate('RecycleBin')}
+          >
+            <Ionicons name="trash-outline" size={24} color={theme.textSecondary} />
+            <Text style={[styles.dataOptionText, { color: theme.text }]}>Recycle Bin</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>About</Text>
           <View style={styles.aboutContainer}>
-            <Text style={[styles.aboutText, { color: theme.text }]}>Journal App v1.0</Text>
+            <Text style={[styles.aboutText, { color: theme.text }]}>EZournals v1.0</Text>
             <Text style={[styles.aboutSubtext, { color: theme.textSecondary }]}>Capture your thoughts and memories</Text>
           </View>
         </View>
@@ -311,5 +363,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7F8C8D',
     textAlign: 'center'
+  },
+  createThemeOption: {
+    borderStyle: 'dashed'
+  },
+  themeMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  themeActions: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 4
+  },
+  dataOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 8
+  },
+  dataOptionText: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 16
   }
 });

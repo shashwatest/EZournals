@@ -9,6 +9,8 @@ import ViewEntryScreen from './screens/ViewEntryScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import NavigateScreen from './screens/NavigateScreen';
 import OverviewScreen from './screens/OverviewScreen';
+import CustomThemeScreen from './screens/CustomThemeScreen';
+import RecycleBinScreen from './screens/RecycleBinScreen';
 
 const Stack = createStackNavigator();
 
@@ -69,6 +71,8 @@ function AppNavigator() {
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Navigate" component={NavigateScreen} />
         <Stack.Screen name="Overview" component={OverviewScreen} />
+        <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
+        <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

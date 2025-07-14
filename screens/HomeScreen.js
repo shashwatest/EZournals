@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getEntries, deleteEntry } from '../utils/storage';
+import { getEntries, deleteEntry, getRecycleBin, saveToRecycleBin } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import EntryCard from '../components/EntryCard';
 import Sidebar from '../components/Sidebar';
@@ -56,20 +56,18 @@ export default function HomeScreen({ navigation }) {
     setFilteredEntries(filtered);
   };
 
-  const handleDelete = (id) => {
-    Alert.alert(
-      'Delete Entry',
-      'This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => confirmDelete(id) }
-      ]
-    );
-  };
-
-  const confirmDelete = async (id) => {
-    await deleteEntry(id);
-    loadData();
+  const handleDelete = async (id) => {
+    const entryToDelete = entries.find(e => e.id === id);
+    if (entryToDelete) {
+      // Move to recycle bin
+      const deletedEntry = { ...entryToDelete, deletedAt: new Date().toISOString() };
+      const recycleBin = await getRecycleBin();
+      await saveToRecycleBin([...recycleBin, deletedEntry]);
+      
+      // Delete from main entries
+      await deleteEntry(id);
+      loadData();
+    }
   };
 
   const renderEntry = ({ item }) => (
@@ -96,7 +94,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerCenter}>
           <Text style={[styles.greeting, { color: theme.text }]}>EZournals</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {stats.totalEntries} entries • {stats.totalWords} words
+            {stats.totalEntries} entries
           </Text>
         </View>
         <TouchableOpacity 

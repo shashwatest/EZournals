@@ -171,3 +171,21 @@ export const saveDarkMode = async (isDark) => {
     console.error('Error saving dark mode:', error);
   }
 };
+
+export const getRecycleBin = async () => {
+  try {
+    const data = await AsyncStorage.getItem('recycleBin');
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error getting recycle bin:', error);
+    return [];
+  }
+};
+
+export const saveToRecycleBin = async (entries) => {
+  try {
+    await AsyncStorage.setItem('recycleBin', JSON.stringify(entries));
+  } catch (error) {
+    console.error('Error saving to recycle bin:', error);
+  }
+};

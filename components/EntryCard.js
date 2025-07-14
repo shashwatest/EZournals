@@ -76,25 +76,9 @@ export default function EntryCard({ entry, onPress, onDelete }) {
       
       <View style={styles.previewContainer}>
         <RichTextRenderer 
-          content={entry.content.substring(0, 150) + (entry.content.length > 150 ? '...' : '')} 
+          content={entry.content.substring(0, 200) + (entry.content.length > 200 ? '...' : '')} 
           style={styles.preview} 
         />
-      </View>
-      
-      {entry.tags && entry.tags.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
-          {entry.tags.map(tag => (
-            <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '30', borderColor: getTagColor(tag) }]}>
-              <Text style={[styles.tagText, { color: getTagColor(tag) }]}>{tag}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-      
-      <View style={styles.footer}>
-        <Text style={styles.wordCount}>
-          {entry.content.split(' ').length} words
-        </Text>
       </View>
       </CardWrapper>
     </TouchableOpacity>

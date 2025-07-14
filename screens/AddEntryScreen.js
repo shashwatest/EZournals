@@ -4,8 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { saveEntry } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import TagInput from '../components/TagInput';
-import FloatingTimestamp from '../components/FloatingTimestamp';
-import TimeRangeTracker from '../components/TimeRangeTracker';
 import RichTextEditor from '../components/RichTextEditor';
 import AudioPlayer from '../components/AudioPlayer';
 
@@ -14,10 +12,6 @@ export default function AddEntryScreen({ navigation }) {
   const [content, setContent] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [eventTime, setEventTime] = useState(new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-  const [showTimestamp, setShowTimestamp] = useState(false);
-  const [timeRange, setTimeRange] = useState(null);
-  const [showTimeRange, setShowTimeRange] = useState(false);
   const [audioUri, setAudioUri] = useState(null);
 
   if (!theme) return null;
@@ -37,8 +31,6 @@ export default function AddEntryScreen({ navigation }) {
       await saveEntry({ 
         content: content.trim(),
         tags: selectedTags,
-        eventTime: eventTime,
-        timeRange: timeRange,
         audioUri: audioUri
       });
       navigation.goBack();
@@ -81,25 +73,7 @@ export default function AddEntryScreen({ navigation }) {
             onAudioRecorded={setAudioUri}
           />
           
-          <View style={styles.suggestionsContainer}>
-            <TouchableOpacity 
-              style={styles.timestampSuggestion}
-              onPress={() => setShowTimestamp(true)}
-            >
-              <Ionicons name="time-outline" size={16} color={theme.textLight} />
-              <Text style={styles.timestampText}>Time: {eventTime}</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.timeRangeSuggestion}
-              onPress={() => setShowTimeRange(true)}
-            >
-              <Ionicons name="timer-outline" size={16} color={theme.textLight} />
-              <Text style={styles.timestampText}>
-                {timeRange ? `${timeRange.start} - ${timeRange.end}` : 'Add range'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+
         </View>
 
         <View style={styles.metaContainer}>
@@ -116,9 +90,6 @@ export default function AddEntryScreen({ navigation }) {
           />
           
           <View style={styles.footer}>
-            <Text style={styles.wordCount}>
-              {wordCount} {wordCount === 1 ? 'word' : 'words'}
-            </Text>
             <Text style={styles.timestamp}>
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -130,19 +101,7 @@ export default function AddEntryScreen({ navigation }) {
         </View>
       </ScrollView>
       
-      <FloatingTimestamp
-        eventTime={eventTime}
-        onTimeChange={setEventTime}
-        visible={showTimestamp}
-        onDismiss={() => setShowTimestamp(false)}
-      />
-      
-      <TimeRangeTracker
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        visible={showTimeRange}
-        onDismiss={() => setShowTimeRange(false)}
-      />
+
     </KeyboardAvoidingView>
   );
 }
@@ -260,10 +219,7 @@ const createStyles = (theme) => StyleSheet.create({
     elevation: 3
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: theme.border
