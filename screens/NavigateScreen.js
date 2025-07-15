@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, FlatList, Calendar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, FlatList, Animated } from 'react-native';
+import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, getPredefinedTags } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
@@ -11,7 +12,9 @@ export default function NavigateScreen({ navigation }) {
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMood, setSelectedMood] = useState(null);
-  const [viewMode, setViewMode] = useState('date'); // 'date', 'mood'
+  const [showEntries, setShowEntries] = useState(false);
+  const [markedDates, setMarkedDates] = useState({});
+  const slideAnim = new Animated.Value(0);
 
   if (!theme) return null;
 
@@ -19,20 +22,44 @@ export default function NavigateScreen({ navigation }) {
     loadEntries();
   }, []);
 
+  useEffect(() => {
+    if (showEntries) {
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      slideAnim.setValue(0);
+    }
+  }, [showEntries]);
+
   const loadEntries = async () => {
     const data = await getEntries();
     setEntries(data);
-    setFilteredEntries(data);
+    
+    // Create marked dates for calendar
+    const marked = {};
+    data.forEach(entry => {
+      const dateKey = new Date(entry.date).toISOString().split('T')[0];
+      marked[dateKey] = {
+        marked: true,
+        dotColor: theme.accent,
+        selectedColor: theme.accent
+      };
+    });
+    setMarkedDates(marked);
   };
 
-  const filterByDate = (date) => {
+  const onDayPress = (day) => {
     const filtered = entries.filter(entry => {
-      const entryDate = new Date(entry.date).toDateString();
-      return entryDate === new Date(date).toDateString();
+      const entryDate = new Date(entry.date).toISOString().split('T')[0];
+      return entryDate === day.dateString;
     });
     setFilteredEntries(filtered);
-    setSelectedDate(date);
+    setSelectedDate(day.dateString);
     setSelectedMood(null);
+    setShowEntries(true);
   };
 
   const filterByMood = (mood) => {
@@ -42,26 +69,14 @@ export default function NavigateScreen({ navigation }) {
     setFilteredEntries(filtered);
     setSelectedMood(mood);
     setSelectedDate(null);
+    setShowEntries(true);
   };
 
   const clearFilters = () => {
-    setFilteredEntries(entries);
+    setFilteredEntries([]);
     setSelectedDate(null);
     setSelectedMood(null);
-  };
-
-  const getQuickDates = () => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const thisWeek = new Date(today);
-    thisWeek.setDate(today.getDate() - 7);
-
-    return [
-      { label: 'Today', date: today },
-      { label: 'Yesterday', date: yesterday },
-      { label: 'This Week', date: thisWeek }
-    ];
+    setShowEntries(false);
   };
 
   const moods = getPredefinedTags();
@@ -74,6 +89,16 @@ export default function NavigateScreen({ navigation }) {
     />
   );
 
+  const formatSelectedDate = () => {
+    if (!selectedDate) return '';
+    return new Date(selectedDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const styles = createStyles(theme);
 
   return (
@@ -85,75 +110,107 @@ export default function NavigateScreen({ navigation }) {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Navigate</Text>
-        <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-          <Text style={[styles.clearText, { color: theme.accent }]}>Clear</Text>
-        </TouchableOpacity>
+        {showEntries && (
+          <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
+            <Text style={[styles.clearText, { color: theme.accent }]}>Clear</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Navigation</Text>
-          <View style={styles.quickDates}>
-            {getQuickDates().map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.quickButton, { borderColor: theme.border }]}
-                onPress={() => filterByDate(item.date)}
-              >
-                <Text style={[styles.quickButtonText, { color: theme.text }]}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
+      {!showEntries ? (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={[styles.calendarSection, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Select a Date</Text>
+            <Calendar
+              onDayPress={onDayPress}
+              markedDates={{
+                ...markedDates,
+                [selectedDate]: {
+                  ...markedDates[selectedDate],
+                  selected: true,
+                  selectedColor: theme.accent
+                }
+              }}
+              theme={{
+                backgroundColor: theme.surface,
+                calendarBackground: theme.surface,
+                textSectionTitleColor: theme.text,
+                selectedDayBackgroundColor: theme.accent,
+                selectedDayTextColor: theme.surface,
+                todayTextColor: theme.accent,
+                dayTextColor: theme.text,
+                textDisabledColor: theme.textLight,
+                dotColor: theme.accent,
+                selectedDotColor: theme.surface,
+                arrowColor: theme.accent,
+                monthTextColor: theme.text,
+                indicatorColor: theme.accent,
+                textDayFontWeight: '400',
+                textMonthFontWeight: '600',
+                textDayHeaderFontWeight: '500'
+              }}
+            />
           </View>
-        </View>
 
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Filter by Mood</Text>
-          <View style={styles.moodGrid}>
-            {moods.map((mood, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.moodButton,
-                  { borderColor: mood.color },
-                  selectedMood === mood.name && { backgroundColor: mood.color + '20' }
-                ]}
-                onPress={() => filterByMood(mood.name)}
-              >
-                <Text style={[styles.moodText, { color: mood.color }]}>{mood.name}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={[styles.section, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Or Filter by Mood</Text>
+            <View style={styles.moodGrid}>
+              {moods.map((mood, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.moodButton,
+                    { borderColor: mood.color },
+                    selectedMood === mood.name && { backgroundColor: mood.color + '20' }
+                  ]}
+                  onPress={() => filterByMood(mood.name)}
+                >
+                  <Text style={[styles.moodText, { color: mood.color }]}>{mood.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <View style={styles.resultsHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Results ({filteredEntries.length})
+        </ScrollView>
+      ) : (
+        <Animated.View 
+          style={[
+            styles.resultsContainer,
+            {
+              transform: [{
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0]
+                })
+              }],
+              opacity: slideAnim
+            }
+          ]}
+        >
+          <View style={[styles.resultsHeader, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.resultsTitle, { color: theme.text }]}>
+              {selectedDate ? formatSelectedDate() : `Mood: ${selectedMood}`}
             </Text>
-            {(selectedDate || selectedMood) && (
-              <Text style={[styles.filterInfo, { color: theme.textSecondary }]}>
-                {selectedDate ? `Date: ${selectedDate.toDateString()}` : `Mood: ${selectedMood}`}
-              </Text>
-            )}
+            <Text style={[styles.resultsCount, { color: theme.textSecondary }]}>
+              {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'}
+            </Text>
           </View>
-        </View>
-
-      </ScrollView>
-
-      <FlatList
-        data={filteredEntries}
-        renderItem={renderEntry}
-        keyExtractor={item => item.id}
-        showsVerticalScrollIndicator={false}
-        style={styles.entriesList}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={48} color={theme.textLight} />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No entries found</Text>
-          </View>
-        }
-      />
+          
+          <FlatList
+            data={filteredEntries}
+            renderItem={renderEntry}
+            keyExtractor={item => item.id}
+            showsVerticalScrollIndicator={false}
+            style={styles.entriesList}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="document-outline" size={48} color={theme.textLight} />
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No entries found</Text>
+                <Text style={[styles.emptySubtext, { color: theme.textLight }]}>Try selecting a different date or mood</Text>
+              </View>
+            }
+          />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -161,7 +218,7 @@ export default function NavigateScreen({ navigation }) {
 const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA'
+    backgroundColor: theme.background
   },
   header: {
     flexDirection: 'row',
@@ -170,7 +227,7 @@ const createStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingTop: 52,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -183,20 +240,31 @@ const createStyles = (theme) => StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2C3E50'
+    color: theme.text
   },
   clearButton: {
     padding: 8
   },
   clearText: {
     fontSize: 16,
-    color: '#3498DB'
+    color: theme.accent
   },
   content: {
-    maxHeight: 300
+    flex: 1
+  },
+  calendarSection: {
+    backgroundColor: theme.surface,
+    margin: 16,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     margin: 16,
     borderRadius: 12,
     padding: 16,
@@ -207,27 +275,10 @@ const createStyles = (theme) => StyleSheet.create({
     elevation: 3
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 12
-  },
-  quickDates: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  quickButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#ECF0F1',
-    borderRadius: 8,
-    alignItems: 'center'
-  },
-  quickButtonText: {
-    fontSize: 14,
-    color: '#2C3E50'
+    color: theme.text,
+    marginBottom: 16
   },
   moodGrid: {
     flexDirection: 'row',
@@ -235,35 +286,54 @@ const createStyles = (theme) => StyleSheet.create({
     gap: 8
   },
   moodButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderRadius: 16,
-    marginBottom: 4
+    borderRadius: 20,
+    marginBottom: 8
   },
   moodText: {
     fontSize: 14,
     fontWeight: '500'
   },
-  resultsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+  resultsContainer: {
+    flex: 1
   },
-  filterInfo: {
-    fontSize: 12,
-    color: '#7F8C8D'
+  resultsHeader: {
+    backgroundColor: theme.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border
+  },
+  resultsTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 4
+  },
+  resultsCount: {
+    fontSize: 14,
+    color: theme.textSecondary
   },
   entriesList: {
     flex: 1
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 48
+    paddingVertical: 64,
+    paddingHorizontal: 32
   },
   emptyText: {
-    fontSize: 16,
-    color: '#7F8C8D',
-    marginTop: 12
+    fontSize: 18,
+    fontWeight: '500',
+    color: theme.textSecondary,
+    marginTop: 16,
+    marginBottom: 8
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.textLight,
+    textAlign: 'center'
   }
 });

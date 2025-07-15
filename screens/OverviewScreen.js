@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Dimensions, Modal } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, getPredefinedTags } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,14 +10,18 @@ const { width } = Dimensions.get('window');
 export default function OverviewScreen({ navigation }) {
   const { theme } = useTheme();
   const [entries, setEntries] = useState([]);
-  const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year'
+  const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year', 'custom'
   const [stats, setStats] = useState({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState('start'); // 'start' or 'end'
+  const [customStartDate, setCustomStartDate] = useState(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const [customEndDate, setCustomEndDate] = useState(new Date());
 
   if (!theme) return null;
 
   useEffect(() => {
     loadData();
-  }, [timeRange]);
+  }, [timeRange, customStartDate, customEndDate]);
 
   const loadData = async () => {
     const data = await getEntries();
@@ -26,23 +31,31 @@ export default function OverviewScreen({ navigation }) {
 
   const calculateStats = (data) => {
     const now = new Date();
-    let startDate;
+    let startDate, endDate;
 
     switch (timeRange) {
       case 'week':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDate = now;
         break;
       case 'month':
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = now;
         break;
       case 'year':
         startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = now;
+        break;
+      case 'custom':
+        startDate = customStartDate;
+        endDate = customEndDate;
         break;
     }
 
-    const filteredEntries = data.filter(entry => 
-      new Date(entry.date) >= startDate
-    );
+    const filteredEntries = data.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= startDate && entryDate <= endDate;
+    });
 
     const moodCounts = {};
     const moods = getPredefinedTags();
@@ -86,10 +99,31 @@ export default function OverviewScreen({ navigation }) {
     return maxCount > 0 ? (count / maxCount) * 100 : 0;
   };
 
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      if (datePickerMode === 'start') {
+        setCustomStartDate(selectedDate);
+      } else {
+        setCustomEndDate(selectedDate);
+      }
+    }
+  };
+
+  const openDatePicker = (mode) => {
+    setDatePickerMode(mode);
+    setShowDatePicker(true);
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   const timeRangeOptions = [
     { key: 'week', label: 'Week' },
     { key: 'month', label: 'Month' },
-    { key: 'year', label: 'Year' }
+    { key: 'year', label: 'Year' },
+    { key: 'custom', label: 'Custom' }
   ];
 
   const styles = createStyles(theme);
@@ -131,6 +165,30 @@ export default function OverviewScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+          
+          {timeRange === 'custom' && (
+            <View style={styles.customDateRange}>
+              <TouchableOpacity 
+                style={[styles.dateButton, { borderColor: theme.border }]}
+                onPress={() => openDatePicker('start')}
+              >
+                <Ionicons name="calendar-outline" size={16} color={theme.textSecondary} />
+                <Text style={[styles.dateButtonText, { color: theme.text }]}>
+                  From: {formatDate(customStartDate)}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.dateButton, { borderColor: theme.border }]}
+                onPress={() => openDatePicker('end')}
+              >
+                <Ionicons name="calendar-outline" size={16} color={theme.textSecondary} />
+                <Text style={[styles.dateButtonText, { color: theme.text }]}>
+                  To: {formatDate(customEndDate)}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
@@ -151,32 +209,43 @@ export default function OverviewScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+        <View style={[styles.moodSection, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Mood Distribution</Text>
-          {stats.moodCounts && Object.entries(stats.moodCounts).map(([mood, data]) => (
-            <View key={mood} style={styles.moodItem}>
-              <View style={styles.moodHeader}>
-                <View style={styles.moodInfo}>
-                  <View style={[styles.moodDot, { backgroundColor: data.color }]} />
-                  <Text style={[styles.moodName, { color: theme.text }]}>{mood}</Text>
+          <View style={styles.moodChart}>
+            {stats.moodCounts && Object.entries(stats.moodCounts)
+              .filter(([mood, data]) => data.count > 0)
+              .sort((a, b) => b[1].count - a[1].count)
+              .map(([mood, data]) => (
+              <View key={mood} style={styles.moodItem}>
+                <View style={styles.moodHeader}>
+                  <View style={styles.moodInfo}>
+                    <View style={[styles.moodIndicator, { backgroundColor: data.color }]} />
+                    <Text style={[styles.moodName, { color: theme.text }]}>{mood}</Text>
+                  </View>
+                  <View style={styles.moodStats}>
+                    <Text style={[styles.moodCount, { color: data.color }]}>{data.count}</Text>
+                    <Text style={[styles.moodPercentage, { color: theme.textSecondary }]}>
+                      {getMoodPercentage(data.count)}%
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.moodStats}>
-                  <Text style={[styles.moodCount, { color: theme.textSecondary }]}>{data.count}</Text>
-                  <Text style={[styles.moodPercentage, { color: theme.textLight }]}>
-                    {getMoodPercentage(data.count)}%
-                  </Text>
+                <View style={[styles.moodBarContainer, { backgroundColor: theme.background }]}>
+                  <View 
+                    style={[
+                      styles.moodBarFill, 
+                      { 
+                        backgroundColor: data.color + '40',
+                        width: `${getBarWidth(data.count)}%`,
+                        borderColor: data.color
+                      }
+                    ]} 
+                  >
+                    <View style={[styles.moodBarCore, { backgroundColor: data.color, width: '100%' }]} />
+                  </View>
                 </View>
               </View>
-              <View style={[styles.moodBar, { backgroundColor: theme.border }]}>
-                <View 
-                  style={[
-                    styles.moodBarFill, 
-                    { backgroundColor: data.color, width: `${getBarWidth(data.count)}%` }
-                  ]} 
-                />
-              </View>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
 
         {stats.totalEntries === 0 && (
@@ -190,6 +259,15 @@ export default function OverviewScreen({ navigation }) {
         )}
 
       </ScrollView>
+      
+      {showDatePicker && (
+        <DateTimePicker
+          value={datePickerMode === 'start' ? customStartDate : customEndDate}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+        />
+      )}
     </View>
   );
 }
@@ -279,53 +357,90 @@ const createStyles = (theme) => StyleSheet.create({
     color: '#7F8C8D',
     marginTop: 4
   },
+  customDateRange: {
+    marginTop: 16,
+    gap: 12
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 8,
+    gap: 8
+  },
+  dateButtonText: {
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  moodSection: {
+    backgroundColor: theme.surface,
+    margin: 16,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
+  },
+  moodChart: {
+    gap: 4
+  },
   moodItem: {
-    marginBottom: 16
+    marginBottom: 20
   },
   moodHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 12
   },
   moodInfo: {
     flexDirection: 'row',
     alignItems: 'center'
   },
-  moodDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8
+  moodIndicator: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 12
   },
   moodName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#2C3E50'
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.text
   },
   moodStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: 12
   },
   moodCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#7F8C8D'
+    fontSize: 18,
+    fontWeight: '700'
   },
   moodPercentage: {
-    fontSize: 12,
-    color: '#BDC3C7'
+    fontSize: 14,
+    fontWeight: '500'
   },
-  moodBar: {
-    height: 6,
-    backgroundColor: '#ECF0F1',
-    borderRadius: 3,
+  moodBarContainer: {
+    height: 12,
+    backgroundColor: theme.background,
+    borderRadius: 6,
     overflow: 'hidden'
   },
   moodBarFill: {
     height: '100%',
-    borderRadius: 3
+    borderRadius: 6,
+    borderWidth: 1,
+    justifyContent: 'center'
+  },
+  moodBarCore: {
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center'
   },
   emptyState: {
     alignItems: 'center',
