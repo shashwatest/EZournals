@@ -4,7 +4,7 @@ import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 
 export async function signInWithGoogleAsync() {
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: '809838918420-sspuq7kg1bilibf5be065sr8re5h0ki0.apps.googleusercontent.com', // Replace with your web client ID from Firebase
+    clientId: 'EnterYourOwn.apps.googleusercontent.com', // Replace with your web client ID from Firebase
   });
 
   if (response?.type === 'success') {
