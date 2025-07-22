@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Image } from 'react-native';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, deleteEntry, getRecycleBin, saveToRecycleBin } from '../utils/storage';
@@ -106,11 +107,11 @@ export default function HomeScreen({ navigation }) {
 
   const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings);
 
+  const user = require('../utils/firebase').auth.currentUser;
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
-      
-      <View style={[styles.header, { backgroundColor: theme.surface }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}> 
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={() => setShowSidebar(true)}
@@ -123,6 +124,18 @@ export default function HomeScreen({ navigation }) {
             {stats.totalEntries} entries
           </Text>
         </View>
+        <TouchableOpacity 
+          style={styles.accountButton}
+          onPress={() => navigation.navigate('AccountInfo')}
+        >
+          {user && user.photoURL ? (
+            <View style={{ width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' }}>
+              <Image source={{ uri: user.photoURL }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+            </View>
+          ) : (
+            <Ionicons name="person-circle-outline" size={24} color={theme.text} />
+          )}
+        </TouchableOpacity>
         <TouchableOpacity 
           style={styles.searchButton}
           onPress={() => setShowSearch(!showSearch)}

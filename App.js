@@ -26,7 +26,7 @@ function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Home"
+        initialRouteName="Login"
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: theme.background },
@@ -66,6 +66,9 @@ function AppNavigator() {
           },
         }}
       >
+        <Stack.Screen name="Login" component={require('./screens/LoginScreen').default} />
+        <Stack.Screen name="Signup" component={require('./screens/SignupScreen').default} />
+        <Stack.Screen name="ForgotPassword" component={require('./screens/ForgotPasswordScreen').default} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="AddEntry" component={AddEntryScreen} />
         <Stack.Screen name="EditEntry" component={EditEntryScreen} />
@@ -76,6 +79,7 @@ function AppNavigator() {
         <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
         <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
         <Stack.Screen name="UISettings" component={UISettingsScreen} />
+        <Stack.Screen name="AccountInfo" component={require('./screens/AccountInfoScreen').default} />
       </Stack.Navigator>
     </NavigationContainer>
   );

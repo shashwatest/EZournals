@@ -34,7 +34,7 @@ export default function Sidebar({ visible, onClose, navigation }) {
         
         <View style={[styles.sidebar, { backgroundColor: theme.surface }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.text }]}>Journal</Text>
+            <Text style={[styles.title, { color: theme.text }]}>EZournals</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme.textSecondary} />
             </TouchableOpacity>
