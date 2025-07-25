@@ -20,42 +20,16 @@ export default function AccountInfoScreen({ navigation }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleUpdateProfile = async () => {
+  const handleSaveAll = async () => {
     setLoading(true);
     setError('');
     setSuccess('');
     try {
       await updateProfile(user, { displayName, photoURL: profilePic });
-      setSuccess('Profile updated successfully!');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateEmail = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
       await updateEmail(user, newEmail);
+      if (newPassword) await updatePassword(user, newPassword);
       setEmail(newEmail);
-      setSuccess('Email updated successfully!');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await updatePassword(user, newPassword);
-      setSuccess('Password updated successfully!');
+      setSuccess('Account updated successfully!');
       setNewPassword('');
     } catch (e) {
       setError(e.message);
@@ -66,7 +40,7 @@ export default function AccountInfoScreen({ navigation }) {
 
   const handlePickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -88,53 +62,58 @@ export default function AccountInfoScreen({ navigation }) {
       <View style={styles.profilePicContainer}>
         <TouchableOpacity onPress={handlePickImage}>
           {profilePic ? (
-            <View style={styles.profilePicWrapper}>
-              <Ionicons name="camera" size={20} color={theme.textLight} style={styles.cameraIcon} />
-              <Image source={{ uri: profilePic }} style={styles.profilePic} />
+            <View style={[styles.profilePicWrapper, { width: 160, height: 160, borderRadius: 80 }] }>
+              <Ionicons name="camera" size={28} color={theme.textLight} style={styles.cameraIcon} />
+              <Image source={{ uri: profilePic }} style={{ width: 160, height: 160, borderRadius: 80 }} />
             </View>
           ) : (
             <View style={styles.profilePicPlaceholder}>
-              <Ionicons name="person-circle-outline" size={64} color={theme.textLight} />
-              <Ionicons name="camera" size={20} color={theme.textLight} style={styles.cameraIcon} />
+              <Ionicons name="person-circle-outline" size={160} color={theme.textLight} />
+              <Ionicons name="camera" size={28} color={theme.textLight} style={styles.cameraIcon} />
             </View>
           )}
         </TouchableOpacity>
       </View>
       <Text style={[styles.label, { color: theme.textSecondary }]}>Display Name</Text>
-      <TextInput
-        style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-        value={displayName}
-        onChangeText={setDisplayName}
-      />
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={handleUpdateProfile} disabled={loading}>
-        <Text style={[styles.buttonText, { color: theme.surface }]}>{loading ? 'Updating...' : 'Update Name & Picture'}</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+        <TextInput
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface, flex: 1 }]}
+          value={displayName}
+          onChangeText={setDisplayName}
+        />
+        <Ionicons name="person-outline" size={20} color={theme.textSecondary} style={{ marginLeft: 8 }} />
+      </View>
       <Text style={[styles.label, { color: theme.textSecondary }]}>Update Email</Text>
-      <TextInput
-        style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-        value={newEmail}
-        onChangeText={setNewEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={handleUpdateEmail} disabled={loading}>
-        <Text style={[styles.buttonText, { color: theme.surface }]}>Update Email</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+        <TextInput
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface, flex: 1 }]}
+          value={newEmail}
+          onChangeText={setNewEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <Ionicons name="mail-outline" size={20} color={theme.textSecondary} style={{ marginLeft: 8 }} />
+      </View>
       <Text style={[styles.label, { color: theme.textSecondary }]}>Update Password</Text>
-      <TextInput
-        style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface }]}
-        value={newPassword}
-        onChangeText={setNewPassword}
-        secureTextEntry
-      />
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={handleUpdatePassword} disabled={loading || !newPassword}>
-        <Text style={[styles.buttonText, { color: theme.surface }]}>Update Password</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+        <TextInput
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.surface, flex: 1 }]}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+        />
+        <Ionicons name="lock-closed-outline" size={20} color={theme.textSecondary} style={{ marginLeft: 8 }} />
+      </View>
       {error ? <Text style={[styles.error, { color: theme.danger }]}>{error}</Text> : null}
       {success ? <Text style={[styles.success, { color: theme.success }]}>{success}</Text> : null}
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.danger }]} onPress={handleLogout}>
-        <Text style={[styles.buttonText, { color: theme.surface }]}>Logout</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
+        <TouchableOpacity style={{ padding: 12 }} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={28} color={theme.danger} />
+        </TouchableOpacity>
+        <TouchableOpacity style={{ padding: 12 }} onPress={handleSaveAll}>
+          <Ionicons name="checkmark-circle" size={32} color={theme.accent} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -146,8 +125,8 @@ const styles = StyleSheet.create({
   },
   profilePicWrapper: {
     position: 'relative',
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 40,
     overflow: 'hidden',
     justifyContent: 'center',
@@ -155,8 +134,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0'
   },
   profilePic: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 40
   },
   cameraIcon: {
@@ -168,8 +147,8 @@ const styles = StyleSheet.create({
     padding: 2
   },
   profilePicPlaceholder: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
     borderRadius: 40,
     backgroundColor: '#F0F0F0',
     justifyContent: 'center',

@@ -1,4 +1,6 @@
 import React from 'react';
+import { Image } from 'react-native';
+import { useUISettings } from '../contexts/UISettingsContext';
 import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,6 +10,9 @@ import { getTagColor } from '../utils/storage';
 
 export default function ViewEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
+  const { getFontFamily, getFontSizes } = useUISettings();
+  const fontFamily = getFontFamily();
+  const fontSizes = getFontSizes();
   const { entry } = route.params;
 
   if (!theme) return null;
@@ -36,7 +41,7 @@ export default function ViewEntryScreen({ route, navigation }) {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Entry Details</Text>
+        <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>Entry Details</Text>
         </View>
         <TouchableOpacity 
           onPress={() => navigation.navigate('EditEntry', { entry })}
@@ -48,38 +53,51 @@ export default function ViewEntryScreen({ route, navigation }) {
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.metaContainer}>
-          <Text style={styles.date}>{formatDate(entry.date)}</Text>
+          <Text style={[styles.date, { fontFamily, fontSize: fontSizes.base }]}>{formatDate(entry.date)}</Text>
           <View style={styles.statsContainer}>
             <View style={styles.stat}>
               <Ionicons name="document-text-outline" size={16} color={theme.textSecondary} />
-              <Text style={styles.statText}>{wordCount} words</Text>
+              <Text style={[styles.statText, { fontFamily, fontSize: fontSizes.base }]}>{wordCount} words</Text>
             </View>
             <View style={styles.stat}>
               <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
-              <Text style={styles.statText}>{readingTime} min read</Text>
+              <Text style={[styles.statText, { fontFamily, fontSize: fontSizes.base }]}>{readingTime} min read</Text>
             </View>
           </View>
         </View>
         
         <View style={styles.contentContainer}>
-          <RichTextRenderer content={entry.content} style={styles.content} />
-          
+          <RichTextRenderer content={entry.content} style={{ ...styles.content, fontFamily, fontSize: fontSizes.base }} />
+          {/* Show attached image if present */}
+          {entry.imageUri && (
+            <View style={{ marginTop: 16, alignItems: 'center' }}>
+              <Image source={{ uri: entry.imageUri }} style={{ width: 180, height: 180, borderRadius: 12, marginVertical: 8 }} />
+            </View>
+          )}
+          {/* Show tagged location if present */}
+          {entry.location && entry.location.coords && (
+            <View style={{ marginTop: 8, alignItems: 'center' }}>
+              <Ionicons name="location-outline" size={18} color={theme.primary} />
+              <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>Location: {formatLocation(entry.location)}</Text>
+            </View>
+          )}
+          {/* Show tags if present */}
           {entry.tags && entry.tags.length > 0 && (
             <View style={styles.tagsContainer}>
-              <Text style={styles.tagsLabel}>Tags:</Text>
+              <Text style={[styles.tagsLabel, { fontFamily, fontSize: fontSizes.base }]}>Tags:</Text>
               <View style={styles.tagsWrapper}>
                 {entry.tags.map(tag => (
-                  <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '20', borderColor: getTagColor(tag) }]}>
-                    <Text style={[styles.tagText, { color: getTagColor(tag) }]}>{tag}</Text>
+                  <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '20', borderColor: getTagColor(tag) }]}> 
+                    <Text style={[styles.tagText, { color: getTagColor(tag), fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
                   </View>
                 ))}
               </View>
             </View>
           )}
-          
+          {/* Show audio if present */}
           {entry.audioUri && (
             <View style={styles.audioContainer}>
-              <Text style={styles.audioLabel}>Audio Recording:</Text>
+              <Text style={[styles.audioLabel, { fontFamily, fontSize: fontSizes.base }]}>Audio Recording:</Text>
               <AudioPlayer audioUri={entry.audioUri} />
             </View>
           )}

@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Journal App",
+    "scheme": "journalapp",
     "slug": "journal-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -34,7 +35,8 @@
     "extra": {
       "eas": {
         "projectId": "c8f7e08a-dd8c-44ac-b334-ff0b8a9524cf"
-      }
+      },
+      
     }
   }
 }

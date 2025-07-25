@@ -4,13 +4,16 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function LoadingScreen({ message = 'Loading...' }) {
   const { theme } = useTheme();
+  const { getFontFamily, getFontSizes } = require('../contexts/UISettingsContext').useUISettings();
+  const fontFamily = getFontFamily();
+  const fontSizes = getFontSizes();
 
   const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={theme.accent} />
-      <Text style={styles.message}>{message}</Text>
+      <Text style={[styles.message, { fontFamily, fontSize: fontSizes.base }]}>{message}</Text>
     </View>
   );
 }

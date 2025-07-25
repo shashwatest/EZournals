@@ -2,16 +2,26 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-// TODO: Replace with your Firebase project config
-const firebaseConfig = {
-  apiKey: "AIzaSyAF8GkiqW7C9kh1Ss5AAveXZZr4rcmOY8U",
-  authDomain: "ezournals.firebaseapp.com",
-  projectId: "ezournals",
-  storageBucket: "ezournals.firebasestorage.app",
-  messagingSenderId: "809838918420",
-  appId: "1:809838918420:web:c6f5bf07da87554eb6a001"
+// Try all possible locations for firebaseConfig in Expo
+const getFirebaseConfig = () => {
+  // Expo Go and dev: manifest.extra
+  if (Constants.manifest?.extra?.firebaseConfig) {
+    return Constants.manifest.extra.firebaseConfig;
+  }
+  // EAS/production: expoConfig.extra
+  if (Constants.expoConfig?.extra?.firebaseConfig) {
+    return Constants.expoConfig.extra.firebaseConfig;
+  }
+  // Newer Expo: manifest2.extra
+  if (Constants.manifest2?.extra?.firebaseConfig) {
+    return Constants.manifest2.extra.firebaseConfig;
+  }
+  throw new Error('No Firebase config found in Expo Constants.');
 };
+
+const firebaseConfig = getFirebaseConfig();
 
 const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {

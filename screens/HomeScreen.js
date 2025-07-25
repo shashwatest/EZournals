@@ -119,23 +119,12 @@ export default function HomeScreen({ navigation }) {
           <Ionicons name="menu-outline" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={[styles.greeting, { color: theme.text }]}>EZournals</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          <Text style={[styles.greeting, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}> 
             {stats.totalEntries} entries
           </Text>
         </View>
-        <TouchableOpacity 
-          style={styles.accountButton}
-          onPress={() => navigation.navigate('AccountInfo')}
-        >
-          {user && user.photoURL ? (
-            <View style={{ width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' }}>
-              <Image source={{ uri: user.photoURL }} style={{ width: 32, height: 32, borderRadius: 16 }} />
-            </View>
-          ) : (
-            <Ionicons name="person-circle-outline" size={24} color={theme.text} />
-          )}
-        </TouchableOpacity>
+        {/* Profile icon removed from header. */}
         <TouchableOpacity 
           style={styles.searchButton}
           onPress={() => setShowSearch(!showSearch)}
@@ -166,10 +155,10 @@ export default function HomeScreen({ navigation }) {
       {filteredEntries.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="book-outline" size={64} color={theme.textLight} />
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.title }]}> 
             {searchQuery ? 'No entries found' : 'Your journal awaits'}
           </Text>
-          <Text style={[styles.emptySubtext, { color: theme.textLight }]}>
+          <Text style={[styles.emptySubtext, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}> 
             {searchQuery ? 'Try a different search term' : 'Capture your thoughts and memories'}
           </Text>
         </View>

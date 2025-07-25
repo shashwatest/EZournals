@@ -6,6 +6,9 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function TagInput({ selectedTags, onTagsChange }) {
   const { theme } = useTheme();
+  const { getFontFamily, getFontSizes } = require('../contexts/UISettingsContext').useUISettings();
+  const fontFamily = getFontFamily();
+  const fontSizes = getFontSizes();
   const [predefinedTags, setPredefinedTags] = useState([]);
   const [userTags, setUserTags] = useState([]);
 
@@ -40,13 +43,13 @@ export default function TagInput({ selectedTags, onTagsChange }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Tags</Text>
+      <Text style={[styles.label, { fontFamily, fontSize: fontSizes.title }]}>Tags</Text>
       
       {selectedTags.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectedTags}>
           {selectedTags.map(tag => (
             <TouchableOpacity key={tag} style={[styles.selectedTag, { backgroundColor: getTagColor(tag) }]} onPress={() => removeTag(tag)}>
-              <Text style={styles.selectedTagText}>{tag}</Text>
+              <Text style={[styles.selectedTagText, { fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
               <Ionicons name="close" size={16} color="white" />
             </TouchableOpacity>
           ))}
@@ -56,7 +59,7 @@ export default function TagInput({ selectedTags, onTagsChange }) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsList}>
         {allTags.filter(tag => !selectedTags.includes(tag)).map(tag => (
           <TouchableOpacity key={tag} style={[styles.tag, { borderColor: getTagColor(tag) }]} onPress={() => addTag(tag)}>
-            <Text style={[styles.tagText, { color: getTagColor(tag) }]}>{tag}</Text>
+            <Text style={[styles.tagText, { color: getTagColor(tag), fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

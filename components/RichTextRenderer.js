@@ -4,6 +4,9 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function RichTextRenderer({ content, style }) {
   const { theme } = useTheme();
+  const { getFontFamily, getFontSizes } = require('../contexts/UISettingsContext').useUISettings();
+  const fontFamily = getFontFamily();
+  const fontSizes = getFontSizes();
 
   if (!theme || !content) return null;
 
@@ -29,9 +32,10 @@ export default function RichTextRenderer({ content, style }) {
         const headerContent = (
           <Text style={[style, { 
             color: textColor, 
-            fontSize: 24, 
-            fontWeight: 'bold'
-          }]}>
+            fontSize: fontSizes.header, 
+            fontWeight: 'bold',
+            fontFamily
+          }]}> 
             {headerText}
             {lineIndex < lines.length - 1 && '\n'}
           </Text>
@@ -52,8 +56,10 @@ export default function RichTextRenderer({ content, style }) {
         const bulletText = line.replace(/<[trs][^>]*>/g, '').replace(/<re>/g, '');
         const bulletContent = (
           <Text style={[style, { 
-            color: textColor
-          }]}>
+            color: textColor,
+            fontFamily,
+            fontSize: fontSizes.base
+          }]}> 
             {bulletText}
             {lineIndex < lines.length - 1 && '\n'}
           </Text>
@@ -83,14 +89,14 @@ export default function RichTextRenderer({ content, style }) {
       while ((boldMatch = boldRegex.exec(cleanLine)) !== null) {
         if (boldMatch.index > currentIndex) {
           parts.push(
-            <Text key={partIndex++} style={[style, { color: textColor }]}>
+            <Text key={partIndex++} style={[style, { color: textColor, fontFamily, fontSize: fontSizes.base }]}> 
               {cleanLine.substring(currentIndex, boldMatch.index)}
             </Text>
           );
         }
         
         parts.push(
-          <Text key={partIndex++} style={[style, { color: textColor, fontWeight: 'bold' }]}>
+          <Text key={partIndex++} style={[style, { color: textColor, fontWeight: 'bold', fontFamily, fontSize: fontSizes.base }]}> 
             {boldMatch[1]}
           </Text>
         );
@@ -107,14 +113,14 @@ export default function RichTextRenderer({ content, style }) {
       while ((italicMatch = italicRegex.exec(remainingText)) !== null) {
         if (italicMatch.index > italicCurrentIndex) {
           parts.push(
-            <Text key={partIndex++} style={[style, { color: textColor }]}>
+            <Text key={partIndex++} style={[style, { color: textColor, fontFamily, fontSize: fontSizes.base }]}> 
               {remainingText.substring(italicCurrentIndex, italicMatch.index)}
             </Text>
           );
         }
         
         parts.push(
-          <Text key={partIndex++} style={[style, { color: textColor, fontStyle: 'italic' }]}>
+          <Text key={partIndex++} style={[style, { color: textColor, fontStyle: 'italic', fontFamily, fontSize: fontSizes.base }]}> 
             {italicMatch[1]}
           </Text>
         );
@@ -124,7 +130,7 @@ export default function RichTextRenderer({ content, style }) {
 
       if (italicCurrentIndex < remainingText.length) {
         parts.push(
-          <Text key={partIndex++} style={[style, { color: textColor }]}>
+            <Text key={partIndex++} style={[style, { color: textColor, fontFamily, fontSize: fontSizes.base }]}> 
             {remainingText.substring(italicCurrentIndex)}
           </Text>
         );
@@ -132,14 +138,14 @@ export default function RichTextRenderer({ content, style }) {
 
       if (parts.length === 0) {
         parts.push(
-          <Text key={partIndex++} style={[style, { color: textColor }]}>
+          <Text key={partIndex++} style={[style, { color: textColor, fontFamily, fontSize: fontSizes.base }]}> 
             {cleanLine}
           </Text>
         );
       }
 
       const textContent = (
-        <Text style={[style, { color: textColor }]}>
+        <Text style={[style, { color: textColor, fontFamily, fontSize: fontSizes.base }]}> 
           {parts}
           {lineIndex < lines.length - 1 && '\n'}
         </Text>

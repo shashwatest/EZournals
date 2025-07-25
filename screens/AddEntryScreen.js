@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useUISettings } from '../contexts/UISettingsContext';
+import { Image } from 'react-native';
+import { pickImage } from '../utils/media';
+import { getCurrentLocation, formatLocation } from '../utils/location';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { saveEntry } from '../utils/storage';
@@ -9,10 +13,15 @@ import AudioPlayer from '../components/AudioPlayer';
 
 export default function AddEntryScreen({ navigation }) {
   const { theme } = useTheme();
+  const { getFontFamily, getFontSizes } = useUISettings();
+  const fontFamily = getFontFamily();
+  const fontSizes = getFontSizes();
   const [content, setContent] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
   const [audioUri, setAudioUri] = useState(null);
+  const [imageUri, setImageUri] = useState(null);
+  const [location, setLocation] = useState(null);
 
   if (!theme) return null;
 
@@ -31,7 +40,9 @@ export default function AddEntryScreen({ navigation }) {
       await saveEntry({ 
         content: content.trim(),
         tags: selectedTags,
-        audioUri: audioUri
+        audioUri,
+        imageUri,
+        location: location ? formatLocation(location) : null
       });
       navigation.goBack();
     } catch (error) {
@@ -52,13 +63,13 @@ export default function AddEntryScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Entry</Text>
+        <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>New Entry</Text>
         <TouchableOpacity 
           onPress={handleSave}
           style={[styles.saveButton, !content.trim() && styles.saveButtonDisabled]}
           disabled={!content.trim()}
         >
-          <Text style={[styles.saveButtonText, !content.trim() && styles.saveButtonTextDisabled]}>
+          <Text style={[styles.saveButtonText, !content.trim() && styles.saveButtonTextDisabled, { fontFamily, fontSize: fontSizes.base }]}> 
             Save
           </Text>
         </TouchableOpacity>
@@ -71,9 +82,9 @@ export default function AddEntryScreen({ navigation }) {
             onChangeText={handleTextChange}
             placeholder="What's on your mind?"
             onAudioRecorded={setAudioUri}
+            onImageSelected={setImageUri}
+            onLocationTagged={setLocation}
           />
-          
-
         </View>
 
         <View style={styles.metaContainer}>
@@ -90,7 +101,7 @@ export default function AddEntryScreen({ navigation }) {
           />
           
           <View style={styles.footer}>
-            <Text style={styles.timestamp}>
+            <Text style={[styles.timestamp, { fontFamily, fontSize: fontSizes.base }]}> 
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 month: 'long', 
@@ -99,9 +110,19 @@ export default function AddEntryScreen({ navigation }) {
             </Text>
           </View>
         </View>
-      </ScrollView>
-      
 
+        {imageUri && (
+          <View style={{ marginTop: 12, alignItems: 'center' }}>
+            <Image source={{ uri: imageUri }} style={{ width: 120, height: 120, borderRadius: 8 }} />
+          </View>
+        )}
+        {location && location.coords && (
+          <View style={{ marginTop: 8, alignItems: 'center' }}>
+            <Ionicons name="location-outline" size={18} color={theme.primary} />
+            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>Location: {location.coords.latitude.toFixed(4)}, {location.coords.longitude.toFixed(4)}</Text>
+          </View>
+        )}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
