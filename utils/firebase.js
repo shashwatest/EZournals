@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Firebase configuration and initialization
 import { initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
@@ -27,3 +28,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 });
+=======
+enter your own
+>>>>>>> 1e00331725058a3d097dc9af997516a714817180
