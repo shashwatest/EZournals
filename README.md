@@ -1,6 +1,6 @@
 # EZournals
 
-A simple React Native journal app built with Expo.
+A simple React Native journal app built with Expo entirely using AI.
 
 ## Features
 - Create new journal entries
