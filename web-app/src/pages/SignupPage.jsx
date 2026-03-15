@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useTheme } from '../contexts/ThemeContext';
 import { BookOpen, Mail, Lock, User } from 'lucide-react';
+
+const googleProvider = new GoogleAuthProvider();
+const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
 export default function SignupPage() {
   const { theme } = useTheme();
@@ -11,22 +14,50 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    const e = {};
+    if (!name.trim()) e.name = 'Name is required';
+    if (!email.trim()) e.email = 'Email is required';
+    else if (!validateEmail(email)) e.email = 'Enter a valid email address';
+    if (!password) e.password = 'Password is required';
+    else if (password.length < 6) e.password = 'Password must be at least 6 characters';
+    if (!confirmPassword) e.confirmPassword = 'Please confirm your password';
+    else if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match';
+    return e;
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setError('');
+    const e2 = validate();
+    if (Object.keys(e2).length > 0) { setErrors(e2); return; }
+    setErrors({});
     setLoading(true);
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: name });
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await updateProfile(userCredential.user, { displayName: name.trim() });
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      setErrors({ general: err.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider) => {
+    setErrors({});
+    try {
+      await signInWithPopup(auth, provider);
+      navigate('/');
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setErrors({ general: err.message });
+      }
     }
   };
 
@@ -40,9 +71,9 @@ export default function SignupPage() {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
       alignItems: 'center',
       padding: '48px',
+      overflowY: 'auto',
     },
     logo: {
       display: 'flex',
@@ -58,6 +89,8 @@ export default function SignupPage() {
     form: {
       width: '100%',
       maxWidth: '400px',
+      paddingTop: '32px',
+      paddingBottom: '32px',
     },
     title: {
       fontSize: '28px',
@@ -110,12 +143,49 @@ export default function SignupPage() {
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',
-      marginTop: '24px',
+      marginTop: '8px',
+    },
+    divider: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      margin: '24px 0',
+      color: theme.textLight,
+      fontSize: '14px',
+    },
+    dividerLine: {
+      flex: 1,
+      height: '1px',
+      backgroundColor: theme.border,
+    },
+    socialButton: {
+      width: '100%',
+      padding: '12px',
+      borderRadius: '12px',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.surface,
+      color: theme.text,
+      fontSize: '15px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '10px',
+      marginBottom: '12px',
     },
     error: {
       color: theme.danger,
+      fontSize: '13px',
+      marginTop: '4px',
+    },
+    generalError: {
+      color: theme.danger,
       fontSize: '14px',
       marginTop: '12px',
+      padding: '10px 14px',
+      backgroundColor: `${theme.danger}15`,
+      borderRadius: '8px',
     },
     footer: {
       marginTop: '24px',
@@ -148,13 +218,13 @@ export default function SignupPage() {
               <User size={20} style={styles.icon} />
               <input
                 type="text"
-                style={styles.input}
+                style={{ ...styles.input, borderColor: errors.name ? theme.danger : theme.border }}
                 placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required
               />
             </div>
+            {errors.name && <div style={styles.error}>{errors.name}</div>}
           </div>
 
           <div style={styles.inputGroup}>
@@ -163,13 +233,13 @@ export default function SignupPage() {
               <Mail size={20} style={styles.icon} />
               <input
                 type="email"
-                style={styles.input}
+                style={{ ...styles.input, borderColor: errors.email ? theme.danger : theme.border }}
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
             </div>
+            {errors.email && <div style={styles.error}>{errors.email}</div>}
           </div>
 
           <div style={styles.inputGroup}>
@@ -177,28 +247,70 @@ export default function SignupPage() {
             <div style={styles.inputWrapper}>
               <Lock size={20} style={styles.icon} />
               <input
-                type="password"
-                style={styles.input}
-                placeholder="••••••••"
+                type={showPassword ? 'text' : 'password'}
+                style={{ ...styles.input, borderColor: errors.password ? theme.danger : theme.border, paddingRight: '48px' }}
+                placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: theme.textSecondary, display: 'flex', alignItems: 'center' }}
+              >
+                {showPassword ? '🙈' : '👁'}
+              </button>
             </div>
+            {errors.password && <div style={styles.error}>{errors.password}</div>}
           </div>
 
-          {error && <div style={styles.error}>{error}</div>}
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Confirm Password</label>
+            <div style={styles.inputWrapper}>
+              <Lock size={20} style={styles.icon} />
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                style={{ ...styles.input, borderColor: errors.confirmPassword ? theme.danger : theme.border, paddingRight: '48px' }}
+                placeholder="Repeat your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(v => !v)}
+                style={{ position: 'absolute', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: theme.textSecondary, display: 'flex', alignItems: 'center' }}
+              >
+                {showConfirm ? '🙈' : '👁'}
+              </button>
+            </div>
+            {errors.confirmPassword && <div style={styles.error}>{errors.confirmPassword}</div>}
+          </div>
+
+          {errors.general && <div style={styles.generalError}>{errors.general}</div>}
 
           <button type="submit" style={styles.button} disabled={loading}>
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
 
+          <div style={styles.divider}>
+            <div style={styles.dividerLine} />
+            or continue with
+            <div style={styles.dividerLine} />
+          </div>
+
+          <button type="button" style={styles.socialButton} onClick={() => handleSocialLogin(googleProvider)}>
+            <svg width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Continue with Google
+          </button>
+
           <div style={styles.footer}>
             Already have an account?{' '}
-            <Link to="/login" style={styles.link}>
-              Sign in
-            </Link>
+            <Link to="/login" style={styles.link}>Sign in</Link>
           </div>
         </form>
       </div>

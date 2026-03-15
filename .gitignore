@@ -1,5 +1,4 @@
 node_modules
 .env
-.vscode
-firebase.txt
-*.md
+.gitignore
+web-app/.gitignore

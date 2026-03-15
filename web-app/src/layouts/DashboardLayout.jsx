@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen } from 'lucide-react';
+import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen, Trash2 } from 'lucide-react';
 
 export default function DashboardLayout() {
   const { theme } = useTheme();
@@ -19,8 +19,10 @@ export default function DashboardLayout() {
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
-    { icon: Calendar, label: 'Calendar', path: '/calendar' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Calendar, label: 'Navigate', path: '/navigate' },
+    { icon: BarChart3, label: 'Overview', path: '/overview' },
+    { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin' },
+    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
@@ -139,19 +141,6 @@ export default function DashboardLayout() {
         </div>
 
         <div style={styles.footer}>
-          <div style={styles.userInfo}>
-            <div style={styles.avatar}>
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
-              ) : (
-                <User size={20} color="#fff" />
-              )}
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '500' }}>{user?.displayName || 'User'}</div>
-              <div style={{ fontSize: '12px', color: theme.textLight }}>{user?.email}</div>
-            </div>
-          </div>
           <button style={styles.logoutBtn} onClick={handleLogout}>
             <LogOut size={16} />
             <span>Logout</span>

@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { useUISettings } from '../contexts/UISettingsContext';
+import { collection, query, where, getDocs, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, Grid, List, SortAsc } from 'lucide-react';
+import { sortEntries, countWords } from '../utils/entryUtils';
 
 export default function HomePage() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { settings } = useUISettings();
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
 
   useEffect(() => {
     loadEntries();
@@ -24,8 +28,7 @@ export default function HomePage() {
     try {
       const q = query(
         collection(db, 'entries'),
-        where('userId', '==', user.uid),
-        orderBy('date', 'desc')
+        where('userId', '==', user.uid)
       );
       
       const snapshot = await getDocs(q);
@@ -35,6 +38,10 @@ export default function HomePage() {
       }));
       
       setEntries(entriesData);
+      
+      // Calculate stats
+      const totalWords = entriesData.reduce((sum, entry) => sum + countWords(entry.content), 0);
+      setStats({ totalEntries: entriesData.length, totalWords });
     } catch (error) {
       console.error('Error loading entries:', error);
     } finally {
@@ -42,10 +49,36 @@ export default function HomePage() {
     }
   };
 
-  const filteredEntries = entries.filter(entry =>
-    entry.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredAndSortedEntries = sortEntries(
+    entries.filter(entry =>
+      entry.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    ),
+    settings.sortBy
   );
+
+  const handleDelete = async (entryId, entry) => {
+    if (!window.confirm('Move this entry to recycle bin?')) {
+      return;
+    }
+
+    try {
+      const deletedEntry = {
+        ...entry,
+        deletedAt: Date.now()
+      };
+      
+      await setDoc(doc(db, 'deletedEntries', entryId), deletedEntry);
+      await deleteDoc(doc(db, 'entries', entryId));
+      
+      setEntries(entries.filter(e => e.id !== entryId));
+      
+      alert('Entry moved to recycle bin');
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      alert('Failed to delete entry: ' + error.message);
+    }
+  };
 
   const styles = {
     container: {
@@ -69,6 +102,11 @@ export default function HomePage() {
       fontSize: '28px',
       fontWeight: '600',
       color: theme.text,
+      marginBottom: '4px',
+    },
+    subtitle: {
+      fontSize: '14px',
+      color: theme.textSecondary,
     },
     newButton: {
       display: 'flex',
@@ -111,8 +149,10 @@ export default function HomePage() {
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-      gap: '24px',
+      gridTemplateColumns: settings.cardLayout === 'grid' 
+        ? 'repeat(auto-fill, minmax(350px, 1fr))' 
+        : '1fr',
+      gap: settings.cardSpacing === 'tight' ? '16px' : settings.cardSpacing === 'loose' ? '32px' : '24px',
     },
     card: {
       padding: '24px',
@@ -151,6 +191,30 @@ export default function HomePage() {
       fontSize: '12px',
       fontWeight: '500',
     },
+    cardActions: {
+      display: 'flex',
+      gap: '8px',
+      marginTop: '12px',
+      paddingTop: '12px',
+      borderTop: `1px solid ${theme.border}`,
+    },
+    actionButton: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '6px 12px',
+      borderRadius: '6px',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: 'transparent',
+      color: theme.text,
+      fontSize: '13px',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+    },
+    deleteButton: {
+      color: theme.danger || '#DC143C',
+      borderColor: theme.danger || '#DC143C',
+    },
     empty: {
       textAlign: 'center',
       padding: '80px 20px',
@@ -166,7 +230,12 @@ export default function HomePage() {
     <div style={styles.container}>
       <div style={styles.header}>
         <div style={styles.headerTop}>
-          <h1 style={styles.title}>My Journal</h1>
+          <div>
+            <h1 style={styles.title}>My Journal</h1>
+            <p style={styles.subtitle}>
+              {stats.totalEntries} {stats.totalEntries === 1 ? 'entry' : 'entries'} · {stats.totalWords} words
+            </p>
+          </div>
           <button style={styles.newButton} onClick={() => navigate('/add')}>
             <Plus size={20} />
             New Entry
@@ -190,7 +259,7 @@ export default function HomePage() {
           <div style={styles.empty}>
             <div style={styles.emptyText}>Loading...</div>
           </div>
-        ) : filteredEntries.length === 0 ? (
+        ) : filteredAndSortedEntries.length === 0 ? (
           <div style={styles.empty}>
             <div style={styles.emptyText}>
               {searchQuery ? 'No entries found' : 'Your journal awaits'}
@@ -198,11 +267,10 @@ export default function HomePage() {
           </div>
         ) : (
           <div style={styles.grid}>
-            {filteredEntries.map((entry) => (
+            {filteredAndSortedEntries.map((entry) => (
               <div
                 key={entry.id}
                 style={styles.card}
-                onClick={() => navigate(`/entry/${entry.id}`)}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
                   e.currentTarget.style.boxShadow = `0 0 20px ${theme.border}`;
@@ -212,21 +280,45 @@ export default function HomePage() {
                   e.currentTarget.style.boxShadow = `0 0 10px ${theme.border}`;
                 }}
               >
-                <div style={styles.cardDate}>
-                  {new Date(entry.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </div>
-                <div style={styles.cardContent}>{entry.content}</div>
-                {entry.tags && entry.tags.length > 0 && (
-                  <div style={styles.tags}>
-                    {entry.tags.map((tag, index) => (
-                      <span key={index} style={styles.tag}>{tag}</span>
-                    ))}
+                <div onClick={() => navigate(`/entry/${entry.id}`)} style={{ cursor: 'pointer' }}>
+                  <div style={styles.cardDate}>
+                    {new Date(entry.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </div>
-                )}
+                  <div style={styles.cardContent}>{entry.content}</div>
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div style={styles.tags}>
+                      {entry.tags.map((tag, index) => (
+                        <span key={index} style={styles.tag}>{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={styles.cardActions}>
+                  <button
+                    style={styles.actionButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/edit/${entry.id}`);
+                    }}
+                  >
+                    <Edit size={14} />
+                    Edit
+                  </button>
+                  <button
+                    style={{ ...styles.actionButton, ...styles.deleteButton }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(entry.id, entry);
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
