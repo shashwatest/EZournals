@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { auth } from '../utils/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { useResponsive } from '../utils/responsive';
 import { signInWithGoogleAsync } from '../utils/googleSignIn';
 import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -13,6 +14,8 @@ import { signInWithAppleAsync } from '../utils/appleSignIn';
 import { signInWithFacebookAsync } from '../utils/facebookSignIn';
 
 export default function SignupScreen({ navigation }) {
+  const { theme } = useTheme();
+  const { isDesktop, isMobile } = useResponsive();
   // Google AuthSession
   const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
     clientId: '809838918420-sspuq7kg1bilibf5be065sr8re5h0ki0.apps.googleusercontent.com', // Replace with your actual client ID
@@ -74,7 +77,7 @@ export default function SignupScreen({ navigation }) {
       setError(e.message);
     }
   };
-  const { theme } = useTheme();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -85,7 +88,7 @@ export default function SignupScreen({ navigation }) {
     setError('');
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      // TODO: Navigate to home screen
+      navigation.replace('Home');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -93,10 +96,27 @@ export default function SignupScreen({ navigation }) {
     }
   };
 
+  const dynamicStyles = createDynamicStyles(isDesktop, isMobile);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
-      <Text style={[styles.title, { color: theme.text }]}>Create Account</Text>
+      {isDesktop && (
+        <View style={[styles.desktopSplit, { backgroundColor: theme.surface }]}>
+          <View style={styles.brandSection}>
+            <Ionicons name="book" size={64} color={theme.accent} />
+            <Text style={[styles.brandTitle, { color: theme.text }]}>EZournals</Text>
+            <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
+              Start your journaling journey today
+            </Text>
+          </View>
+        </View>
+      )}
+      <View style={[dynamicStyles.formContainer, { backgroundColor: theme.background }]}>
+        <View style={dynamicStyles.formContent}>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {isDesktop ? 'Create Account' : 'Sign Up'}
+          </Text>
       <TextInput
         style={[styles.input, { borderColor: theme.border, color: theme.text }]}
         placeholder="Email"
@@ -134,15 +154,51 @@ export default function SignupScreen({ navigation }) {
       <TouchableOpacity onPress={() => navigation.navigate('Login')}>
         <Text style={[styles.link, { color: theme.accent }]}>Already have an account? Login</Text>
       </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
 
+const createDynamicStyles = (isDesktop, isMobile) => StyleSheet.create({
+  formContainer: {
+    flex: isDesktop ? 1 : undefined,
+    width: isDesktop ? '50%' : '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formContent: {
+    width: '100%',
+    maxWidth: isDesktop ? 440 : undefined,
+    padding: isMobile ? 24 : 40,
+  }
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+  },
+  desktopSplit: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 24
+    alignItems: 'center',
+    padding: 60,
+  },
+  brandSection: {
+    alignItems: 'center',
+    maxWidth: 400,
+  },
+  brandTitle: {
+    fontSize: 48,
+    fontWeight: '700',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  brandSubtitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    lineHeight: 26,
   },
   title: {
     fontSize: 28,

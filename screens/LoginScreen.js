@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { auth } from '../utils/firebase';
@@ -9,6 +9,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { signInWithAppleAsync } from '../utils/appleSignIn';
 import { signInWithFacebookAsync } from '../utils/facebookSignIn';
+import { useResponsive } from '../utils/responsive';
 
 export default function LoginScreen({ navigation }) {
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
@@ -31,6 +32,7 @@ export default function LoginScreen({ navigation }) {
     signInWithGoogle();
   }, [response]);
   const { theme } = useTheme();
+  const { isDesktop, isMobile } = useResponsive();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -49,10 +51,27 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const dynamicStyles = createDynamicStyles(isDesktop, isMobile);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
-      <Text style={[styles.title, { color: theme.text }]}>Login</Text>
+      {isDesktop && (
+        <View style={[styles.desktopSplit, { backgroundColor: theme.surface }]}>
+          <View style={styles.brandSection}>
+            <Ionicons name="book" size={64} color={theme.accent} />
+            <Text style={[styles.brandTitle, { color: theme.text }]}>EZournals</Text>
+            <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
+              Your thoughts, beautifully organized
+            </Text>
+          </View>
+        </View>
+      )}
+      <View style={[dynamicStyles.formContainer, { backgroundColor: theme.background }]}>
+        <View style={dynamicStyles.formContent}>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {isDesktop ? 'Welcome Back' : 'Login'}
+          </Text>
       <TextInput
         style={[styles.input, { borderColor: theme.border, color: theme.text }]}
         placeholder="Email"
@@ -93,15 +112,51 @@ export default function LoginScreen({ navigation }) {
       <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
         <Text style={[styles.link, { color: theme.accent }]}>Create a new account</Text>
       </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
 
+const createDynamicStyles = (isDesktop, isMobile) => StyleSheet.create({
+  formContainer: {
+    flex: isDesktop ? 1 : undefined,
+    width: isDesktop ? '50%' : '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formContent: {
+    width: '100%',
+    maxWidth: isDesktop ? 440 : undefined,
+    padding: isMobile ? 24 : 40,
+  }
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+  },
+  desktopSplit: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 24
+    alignItems: 'center',
+    padding: 60,
+  },
+  brandSection: {
+    alignItems: 'center',
+    maxWidth: 400,
+  },
+  brandTitle: {
+    fontSize: 48,
+    fontWeight: '700',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  brandSubtitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    lineHeight: 26,
   },
   title: {
     fontSize: 28,

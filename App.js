@@ -1,18 +1,24 @@
+import ViewEntryScreen from './screens/ViewEntryScreen';
+import LoginScreen from './screens/LoginScreen';
+import SignupScreen from './screens/SignupScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import AccountInfoScreen from './screens/AccountInfoScreen';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ProfilePicProvider } from './contexts/ProfilePicContext';
 import { UISettingsProvider } from './contexts/UISettingsContext';
 import HomeScreen from './screens/HomeScreen';
 import AddEntryScreen from './screens/AddEntryScreen';
 import EditEntryScreen from './screens/EditEntryScreen';
-import ViewEntryScreen from './screens/ViewEntryScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import UISettingsScreen from './screens/UISettingsScreen';
+import RecycleBinScreen from './screens/RecycleBinScreen';
+import CustomThemeScreen from './screens/CustomThemeScreen';
 import NavigateScreen from './screens/NavigateScreen';
 import OverviewScreen from './screens/OverviewScreen';
-import CustomThemeScreen from './screens/CustomThemeScreen';
-import RecycleBinScreen from './screens/RecycleBinScreen';
-import UISettingsScreen from './screens/UISettingsScreen';
+import CloudSettingsScreen from './screens/CloudSettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -66,9 +72,9 @@ function AppNavigator() {
           },
         }}
       >
-        <Stack.Screen name="Login" component={require('./screens/LoginScreen').default} />
-        <Stack.Screen name="Signup" component={require('./screens/SignupScreen').default} />
-        <Stack.Screen name="ForgotPassword" component={require('./screens/ForgotPasswordScreen').default} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Signup" component={SignupScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="AddEntry" component={AddEntryScreen} />
         <Stack.Screen name="EditEntry" component={EditEntryScreen} />
@@ -79,18 +85,22 @@ function AppNavigator() {
         <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
         <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
         <Stack.Screen name="UISettings" component={UISettingsScreen} />
-        <Stack.Screen name="AccountInfo" component={require('./screens/AccountInfoScreen').default} />
+        <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
+        <Stack.Screen name="CloudSettings" component={CloudSettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
 export default function App() {
+  // Use null for initialPic; let AccountInfoScreen update it after login
   return (
     <ThemeProvider>
-      <UISettingsProvider>
-        <AppNavigator />
-      </UISettingsProvider>
+      <ProfilePicProvider initialPic={null}>
+        <UISettingsProvider>
+          <AppNavigator />
+        </UISettingsProvider>
+      </ProfilePicProvider>
     </ThemeProvider>
   );
 }

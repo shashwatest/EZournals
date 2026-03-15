@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
+import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen } from 'lucide-react';
+
+export default function DashboardLayout() {
+  const { theme } = useTheme();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate('/login');
+  };
+
+  const menuItems = [
+    { icon: Home, label: 'Home', path: '/' },
+    { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
+
+  const styles = {
+    container: {
+      display: 'flex',
+      height: '100vh',
+      backgroundColor: theme.background,
+      color: theme.text,
+    },
+    sidebar: {
+      width: '260px',
+      backgroundColor: theme.surface,
+      borderRight: `1px solid ${theme.border}`,
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '24px 12px',
+    },
+    logo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '0 12px',
+      marginBottom: '32px',
+    },
+    logoText: {
+      fontSize: '24px',
+      fontWeight: '700',
+      color: theme.text,
+    },
+    menu: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '4px',
+    },
+    menuItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '12px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      color: theme.textSecondary,
+      textDecoration: 'none',
+    },
+    menuItemActive: {
+      backgroundColor: `${theme.accent}20`,
+      color: theme.accent,
+    },
+    footer: {
+      padding: '16px 12px',
+      borderTop: `1px solid ${theme.border}`,
+    },
+    userInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      marginBottom: '12px',
+    },
+    avatar: {
+      width: '40px',
+      height: '40px',
+      borderRadius: '50%',
+      backgroundColor: theme.accent,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoutBtn: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      color: theme.danger,
+      border: 'none',
+      background: 'transparent',
+      width: '100%',
+      fontSize: '14px',
+    },
+    main: {
+      flex: 1,
+      overflow: 'auto',
+    },
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.sidebar}>
+        <div style={styles.logo}>
+          <BookOpen size={32} color={theme.accent} />
+          <span style={styles.logoText}>EZournals</span>
+        </div>
+
+        <div style={styles.menu}>
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <div
+                key={item.path}
+                style={{
+                  ...styles.menuItem,
+                  ...(isActive ? styles.menuItemActive : {}),
+                }}
+                onClick={() => navigate(item.path)}
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={styles.footer}>
+          <div style={styles.userInfo}>
+            <div style={styles.avatar}>
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+              ) : (
+                <User size={20} color="#fff" />
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '500' }}>{user?.displayName || 'User'}</div>
+              <div style={{ fontSize: '12px', color: theme.textLight }}>{user?.email}</div>
+            </div>
+          </div>
+          <button style={styles.logoutBtn} onClick={handleLogout}>
+            <LogOut size={16} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={styles.main}>
+        <Outlet />
+      </div>
+    </div>
+  );
+}

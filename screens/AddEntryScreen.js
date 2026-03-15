@@ -10,9 +10,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import TagInput from '../components/TagInput';
 import RichTextEditor from '../components/RichTextEditor';
 import AudioPlayer from '../components/AudioPlayer';
+import AudioRecorder from '../components/AudioRecorder';
+
 
 export default function AddEntryScreen({ navigation }) {
-  const { theme } = useTheme();
+  const themeContext = useTheme();
+  const { theme, isLoading } = themeContext;
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -20,50 +23,57 @@ export default function AddEntryScreen({ navigation }) {
   const [wordCount, setWordCount] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
   const [audioUri, setAudioUri] = useState(null);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [imageUri, setImageUri] = useState(null);
   const [location, setLocation] = useState(null);
 
-  if (!theme) return null;
+  // Show a loading fallback if theme is not ready or ThemeContext is loading
+  if (isLoading || !theme) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+        <Text style={{ color: '#fff', fontSize: 18 }}>Loading theme...</Text>
+      </View>
+    );
+  }
 
   const handleTextChange = (text) => {
     setContent(text);
     setWordCount(text.trim().split(/\s+/).filter(word => word.length > 0).length);
   };
 
+  // Removed stray misplaced async/await block
   const handleSave = async () => {
     if (!content.trim()) {
       Alert.alert('Empty Entry', 'Please write something before saving');
       return;
     }
-
     try {
-      await saveEntry({ 
+      await saveEntry({
         content: content.trim(),
         tags: selectedTags,
         audioUri,
         imageUri,
-        location: location ? formatLocation(location) : null
+        location,
       });
       navigation.goBack();
     } catch (error) {
       Alert.alert('Error', 'Failed to save entry');
+      console.error('[AddEntryScreen] Error saving entry:', error);
     }
   };
 
   const styles = createStyles(theme);
-
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
-      
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>New Entry</Text>
+        <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>Add Entry</Text>
         <TouchableOpacity 
           onPress={handleSave}
           style={[styles.saveButton, !content.trim() && styles.saveButtonDisabled]}
@@ -81,36 +91,28 @@ export default function AddEntryScreen({ navigation }) {
             value={content}
             onChangeText={handleTextChange}
             placeholder="What's on your mind?"
-            onAudioRecorded={setAudioUri}
             onImageSelected={setImageUri}
             onLocationTagged={setLocation}
+            onAudioRecorded={(action) => {
+              if (action === 'show') setShowAudioRecorder(true);
+            }}
           />
         </View>
 
         <View style={styles.metaContainer}>
-          {audioUri && (
-            <View style={styles.audioContainer}>
-              <Text style={styles.audioLabel}>Audio Recording:</Text>
-              <AudioPlayer audioUri={audioUri} />
-            </View>
-          )}
-          
           <TagInput 
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
           />
-          
           <View style={styles.footer}>
+            <Text style={[styles.wordCount, { fontFamily, fontSize: fontSizes.base }]}> 
+              {wordCount} {wordCount === 1 ? 'word' : 'words'}
+            </Text>
             <Text style={[styles.timestamp, { fontFamily, fontSize: fontSizes.base }]}> 
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              Created: {new Date().toLocaleDateString()}
             </Text>
           </View>
         </View>
-
         {imageUri && (
           <View style={{ marginTop: 12, alignItems: 'center' }}>
             <Image source={{ uri: imageUri }} style={{ width: 120, height: 120, borderRadius: 8 }} />
@@ -122,7 +124,20 @@ export default function AddEntryScreen({ navigation }) {
             <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>Location: {location.coords.latitude.toFixed(4)}, {location.coords.longitude.toFixed(4)}</Text>
           </View>
         )}
+        {audioUri && (
+          <View style={{ marginTop: 12, alignItems: 'center' }}>
+            <AudioPlayer audioUri={audioUri} />
+          </View>
+        )}
       </ScrollView>
+      {showAudioRecorder && (
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: theme.surface, padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16, elevation: 8 }}>
+          <AudioRecorder onAudioRecorded={(uri) => {
+            if (uri && uri !== 'show') setAudioUri(uri);
+            setShowAudioRecorder(false);
+          }} />
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }

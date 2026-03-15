@@ -29,18 +29,18 @@ export default function EditEntryScreen({ route, navigation }) {
     setWordCount(text.trim().split(/\s+/).filter(word => word.length > 0).length);
   };
 
+  // Removed stray misplaced async/await block
   const handleSave = async () => {
     if (!content.trim()) {
       Alert.alert('Empty Entry', 'Please write something before saving');
       return;
     }
-
     try {
-      await updateEntry(entry.id, { 
+      await updateEntry(entry.id, {
         content: content.trim(),
         tags: selectedTags,
         imageUri,
-        location: location ? formatLocation(location) : null
+        location,
       });
       navigation.goBack();
     } catch (error) {
@@ -115,6 +115,8 @@ export default function EditEntryScreen({ route, navigation }) {
 }
 
 const createStyles = (theme) => StyleSheet.create({
+// ...existing code...
+// ...existing code...
   container: {
     flex: 1,
     backgroundColor: theme.background

@@ -74,11 +74,13 @@ export default function ViewEntryScreen({ route, navigation }) {
               <Image source={{ uri: entry.imageUri }} style={{ width: 180, height: 180, borderRadius: 12, marginVertical: 8 }} />
             </View>
           )}
-          {/* Show tagged location if present */}
-          {entry.location && entry.location.coords && (
+          {/* Show tagged location if present (handle string or object) */}
+          {entry.location && (
             <View style={{ marginTop: 8, alignItems: 'center' }}>
               <Ionicons name="location-outline" size={18} color={theme.primary} />
-              <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>Location: {formatLocation(entry.location)}</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
+                Location: {typeof entry.location === 'string' ? entry.location : (entry.location.coords ? `${entry.location.coords.latitude.toFixed(4)}, ${entry.location.coords.longitude.toFixed(4)}` : '')}
+              </Text>
             </View>
           )}
           {/* Show tags if present */}

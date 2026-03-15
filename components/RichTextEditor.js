@@ -10,8 +10,9 @@ import AudioRecorder from './AudioRecorder';
 import TimestampButton from './TimestampButton';
 import TimeRangeButton from './TimeRangeButton';
 
-export default function RichTextEditor({ value, onChangeText, placeholder, onAudioRecorded }) {
-  const { theme } = useTheme();
+export default function RichTextEditor({ value, onChangeText, placeholder, onAudioRecorded, onImageSelected, onLocationTagged }) {
+  const themeContext = useTheme();
+  const { theme, isLoading } = themeContext;
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -26,7 +27,13 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
   const [rangeText, setRangeText] = useState('');
   const [lastTimeRange, setLastTimeRange] = useState(null);
 
-  if (!theme) return null;
+  if (isLoading || !theme) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+        <Text style={{ color: '#fff', fontSize: 18 }}>Loading theme...</Text>
+      </View>
+    );
+  }
 
   const toggleFormat = (format) => {
     const { start, end } = selection;
@@ -219,8 +226,10 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
                 setShowAttach(false);
                 try {
                   const uri = await pickImage();
-                  setImageUri(uri);
-                  if (onImageSelected) onImageSelected(uri);
+                  if (uri) {
+                    setImageUri(uri);
+                    if (onImageSelected) onImageSelected(uri);
+                  }
                 } catch (e) { Alert.alert('Error', e.message); }
               }}>
                 <Ionicons name="image-outline" size={22} color={theme.text} />
@@ -237,9 +246,19 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
                 <Ionicons name="location-outline" size={22} color={theme.text} />
                 <Text style={{ color: theme.text, fontSize: 12, fontFamily }}>Location</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ alignItems: 'center', margin: 8 }} onPress={() => { setShowAttach(false); }}>
+              {/* Audio recorder icon (single, not duplicated) */}
+              <TouchableOpacity style={{ alignItems: 'center', margin: 8 }} onPress={() => {
+                setShowAttach(false);
+                setTimeout(() => {
+                  // Show audio recorder modal or inline
+                  if (typeof onAudioRecorded === 'function') {
+                    // Optionally, you can show a modal or inline recorder here
+                    // For now, just call a callback to trigger parent to show AudioRecorder
+                    onAudioRecorded('show');
+                  }
+                }, 300);
+              }}>
                 <Ionicons name="mic-outline" size={22} color={theme.text} />
-                <AudioRecorder onAudioRecorded={onAudioRecorded} />
                 <Text style={{ color: theme.text, fontSize: 12, fontFamily }}>Audio</Text>
               </TouchableOpacity>
             </View>
@@ -272,6 +291,7 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
 
 const createStyles = (theme) => StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: theme.surface,
     borderRadius: 12,
     shadowColor: '#000',

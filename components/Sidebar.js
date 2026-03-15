@@ -3,14 +3,16 @@ import { Image } from 'react-native';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProfilePic } from '../contexts/ProfilePicContext';
 
-export default function Sidebar({ visible, onClose, navigation }) {
+export default function Sidebar({ visible, onClose, navigation, isPersistent = false }) {
   const { theme } = useTheme();
   const { getFontFamily, getFontSizes } = require('../contexts/UISettingsContext').useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
   
   if (!theme) return null;
+  
   const menuItems = [
     { icon: 'home-outline', label: 'Home', screen: 'Home' },
     { icon: 'calendar-outline', label: 'Navigate', screen: 'Navigate' },
@@ -20,13 +22,45 @@ export default function Sidebar({ visible, onClose, navigation }) {
   ];
 
   const handleNavigation = (screen) => {
-    onClose();
+    if (!isPersistent) {
+      onClose();
+    }
     if (screen !== 'Home') {
       navigation.navigate(screen);
     }
   };
 
-  const user = require('../utils/firebase').auth.currentUser;
+  const { profilePic } = useProfilePic();
+  
+  // Desktop persistent sidebar (no modal)
+  if (isPersistent) {
+    return (
+      <View style={[styles.sidebar, styles.persistentSidebar, { backgroundColor: theme.surface }]}> 
+        <View style={[styles.header, styles.persistentHeader]}>
+          <Text style={[styles.title, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
+        </View>
+
+        <View style={styles.menu}>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
+              onPress={() => handleNavigation(item.screen)}
+            >
+              <Ionicons name={item.icon} size={22} color={theme.text} />
+              <Text style={[styles.menuLabel, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.version, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}>Version 1.0</Text>
+        </View>
+      </View>
+    );
+  }
+  
+  // Mobile overlay sidebar (with modal)
   return (
     <Modal
       visible={visible}
@@ -59,9 +93,9 @@ export default function Sidebar({ visible, onClose, navigation }) {
           </View>
 
           <TouchableOpacity style={styles.profileSection} onPress={() => { onClose(); navigation.navigate('AccountInfo'); }}>
-            {user && user.photoURL ? (
+            {profilePic ? (
               <View style={styles.profilePicWrapper}>
-                <Image source={{ uri: user.photoURL }} style={styles.profilePic} />
+                <Image source={{ uri: profilePic }} style={styles.profilePic} />
               </View>
             ) : (
               <Ionicons name="person-circle-outline" size={32} color={theme.text} />
@@ -80,36 +114,12 @@ export default function Sidebar({ visible, onClose, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'left',
-    padding: 16,
-    borderTopWidth: 2,
-    borderTopColor: '#ECF0F1',
-    marginTop: 8,
-    marginBottom: 8,
-    justifyContent: 'left',
-    gap: 8
+  persistentSidebar: {
+    paddingTop: 20,
+    height: '100%',
   },
-  profilePicWrapper: {
-    width: 43,
-    height: 43,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'left',
-    alignItems: 'left',
-    marginRight: 8
-  },
-  profilePic: {
-    width: 42,
-    height: 42,
-    borderRadius: 16
-  },
-  profileText: {
-    fontSize: 0,
-    fontWeight: '600',
-    marginLeft: 0
+  persistentHeader: {
+    paddingTop: 20,
   },
   overlay: {
     flex: 1,

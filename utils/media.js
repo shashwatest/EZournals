@@ -1,17 +1,17 @@
 import * as ImagePicker from 'expo-image-picker';
 
 export async function pickImage() {
-  let result = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (result.status !== 'granted') {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
     throw new Error('Permission to access media library was denied');
   }
-  let pickerResult = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaType.Images,
+  const pickerResult = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
     quality: 0.7,
   });
-  if (!pickerResult.cancelled) {
-    return pickerResult.uri;
+  if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+    return pickerResult.assets[0].uri;
   }
   return null;
 }

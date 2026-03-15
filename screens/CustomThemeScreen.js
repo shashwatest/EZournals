@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal 
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
-import { defaultTheme } from '../styles/theme';
+import { classyBWTheme } from '../styles/theme';
 
 export default function CustomThemeScreen({ navigation, route }) {
   const { theme, saveCustomTheme, customThemes } = useTheme();
   const editTheme = route?.params?.editTheme;
-  const [customColors, setCustomColors] = useState(editTheme || defaultTheme);
+  const [customColors, setCustomColors] = useState(editTheme || classyBWTheme);
   const [selectedField, setSelectedField] = useState(null);
 
   const colorPalette = [
@@ -68,7 +68,7 @@ export default function CustomThemeScreen({ navigation, route }) {
   };
 
   const resetToDefault = () => {
-    setCustomColors(defaultTheme);
+    setCustomColors(classyBWTheme);
   };
 
   const updateCustomTheme = async (updatedTheme) => {

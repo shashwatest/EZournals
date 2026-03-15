@@ -1,8 +1,11 @@
 // Firebase configuration and initialization
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, getAuth, browserLocalPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 // Try all possible locations for firebaseConfig in Expo
 const getFirebaseConfig = () => {
@@ -24,6 +27,20 @@ const getFirebaseConfig = () => {
 const firebaseConfig = getFirebaseConfig();
 
 const app = initializeApp(firebaseConfig);
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
+
+// Initialize Firestore
+export const db = getFirestore(app);
+
+// Initialize Storage
+export const storage = getStorage(app);
+
+// Use different auth initialization for web vs native
+export const auth = Platform.OS === 'web' 
+  ? (() => {
+      const webAuth = getAuth(app);
+      webAuth.setPersistence(browserLocalPersistence);
+      return webAuth;
+    })()
+  : initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+    });

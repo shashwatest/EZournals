@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, deleteEntry, getRecycleBin, saveToRecycleBin } from '../utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUISettings } from '../contexts/UISettingsContext';
+import { useResponsive } from '../utils/responsive';
 import EntryCard from '../components/EntryCard';
 import Sidebar from '../components/Sidebar';
 import LoadingScreen from '../components/LoadingScreen';
+import SyncIndicator from '../components/SyncIndicator';
 
 export default function HomeScreen({ navigation }) {
   const { theme } = useTheme();
   const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
+  const { isDesktop, isMobile, containerWidth, cardColumns } = useResponsive();
   const [entries, setEntries] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
@@ -105,33 +108,67 @@ export default function HomeScreen({ navigation }) {
     />
   );
 
-  const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings);
+  const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings, isDesktop, isMobile);
 
   const user = require('../utils/firebase').auth.currentUser;
+  
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}> 
       <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
-      <View style={[styles.header, { backgroundColor: theme.surface }]}> 
-        <TouchableOpacity 
-          style={styles.menuButton}
-          onPress={() => setShowSidebar(true)}
-        >
-          <Ionicons name="menu-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.greeting, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}> 
-            {stats.totalEntries} entries
-          </Text>
+      
+      {/* Desktop: Persistent Sidebar */}
+      {isDesktop && (
+        <View style={styles.desktopSidebar}>
+          <Sidebar 
+            visible={true}
+            onClose={() => {}}
+            navigation={navigation}
+            isPersistent={true}
+          />
         </View>
-        {/* Profile icon removed from header. */}
-        <TouchableOpacity 
-          style={styles.searchButton}
-          onPress={() => setShowSearch(!showSearch)}
-        >
-          <Ionicons name="search-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+      )}
+      
+      {/* Main Content Area */}
+      <View style={styles.mainContent}>
+        <View style={[styles.header, { backgroundColor: theme.surface }]}> 
+          {!isDesktop && (
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={() => setShowSidebar(true)}
+            >
+              <Ionicons name="menu-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+          )}
+          <View style={styles.headerCenter}>
+            <Text style={[styles.greeting, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>
+              {isDesktop ? 'My Journal' : 'EZournals'}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}> 
+                {stats.totalEntries} entries · {stats.totalWords} words
+              </Text>
+              {!isDesktop && <SyncIndicator onSyncComplete={loadData} />}
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.searchButton}
+              onPress={() => setShowSearch(!showSearch)}
+            >
+              <Ionicons name="search-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.profileButton}
+              onPress={() => navigation.navigate('AccountInfo')}
+            >
+              {user?.photoURL ? (
+                <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={32} color={theme.text} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
       {showSearch && (
         <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
@@ -169,9 +206,9 @@ export default function HomeScreen({ navigation }) {
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
-          numColumns={settings.cardLayout === 'grid' ? 2 : 1}
-          key={settings.cardLayout}
-          columnWrapperStyle={settings.cardLayout === 'grid' ? styles.gridRow : null}
+          numColumns={isDesktop ? cardColumns : settings.cardLayout === 'grid' ? 2 : 1}
+          key={`${settings.cardLayout}-${isDesktop ? cardColumns : 1}`}
+          columnWrapperStyle={isDesktop || settings.cardLayout === 'grid' ? styles.gridRow : null}
         />
       )}
       
@@ -182,11 +219,16 @@ export default function HomeScreen({ navigation }) {
         <Ionicons name="create-outline" size={24} color="white" />
       </TouchableOpacity>
       
-      <Sidebar 
-        visible={showSidebar}
-        onClose={() => setShowSidebar(false)}
-        navigation={navigation}
-      />
+      {/* Mobile: Overlay Sidebar */}
+      {!isDesktop && (
+        <Sidebar 
+          visible={showSidebar}
+          onClose={() => setShowSidebar(false)}
+          navigation={navigation}
+          isPersistent={false}
+        />
+      )}
+        </View>
     </View>
   );
 }
@@ -198,18 +240,28 @@ const getTimeOfDay = () => {
   return 'evening';
 };
 
-const createStyles = (theme, fontSizes, fontFamily, spacing, settings) => StyleSheet.create({
+const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop, isMobile) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA'
+    flexDirection: isDesktop ? 'row' : 'column',
+    backgroundColor: theme.background,
+  },
+  desktopSidebar: {
+    width: 280,
+    backgroundColor: theme.surface,
+    borderRightWidth: 1,
+    borderRightColor: theme.border,
+  },
+  mainContent: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    paddingTop: 52,
+    paddingHorizontal: isDesktop ? 32 : 16,
+    paddingVertical: isDesktop ? 20 : 24,
+    paddingTop: isMobile ? 52 : 20,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -233,9 +285,23 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings) => StyleS
     flex: 1,
     alignItems: 'center'
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   searchButton: {
     padding: 8,
     borderRadius: 8
+  },
+  profileButton: {
+    padding: 4,
+    borderRadius: 20,
+  },
+  profileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   menuButton: {
     padding: 8,
@@ -260,11 +326,12 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings) => StyleS
   listContent: {
     paddingTop: spacing.card,
     paddingBottom: spacing.card * 2,
-    paddingHorizontal: settings.cardLayout === 'grid' ? 8 : 0
+    paddingHorizontal: isDesktop ? 32 : (settings.cardLayout === 'grid' ? 8 : 0),
   },
   gridRow: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 8
+    justifyContent: isDesktop ? 'flex-start' : 'space-between',
+    paddingHorizontal: isDesktop ? 0 : 8,
+    gap: isDesktop ? 24 : 0,
   },
   emptyState: {
     flex: 1,

@@ -71,6 +71,8 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const themeOptions = [
+    { name: 'glassmorphism', label: 'Glassmorphism', color: themes.glassmorphism.accent },
+    { name: 'classyBW', label: 'Classy Black & White', color: themes.classyBW.background },
     { name: 'oceanTeal', label: 'Ocean Teal', color: themes.oceanTeal.primary }
   ];
 
@@ -98,7 +100,16 @@ export default function SettingsScreen({ navigation }) {
             <Text style={[styles.appearanceOptionText, { color: theme.text }]}>Display Settings</Text>
             <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
-          <View style={styles.themeGrid}>
+          
+          <TouchableOpacity
+            style={styles.appearanceOption}
+            onPress={() => navigation.navigate('CloudSettings')}
+          >
+            <Ionicons name="cloud-outline" size={24} color={theme.textSecondary} />
+            <Text style={[styles.appearanceOptionText, { color: theme.text }]}>Cloud Sync Settings</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+          
             {themeOptions.map(option => (
               <TouchableOpacity
                 key={option.name}
@@ -144,7 +155,6 @@ export default function SettingsScreen({ navigation }) {
               <Text style={[styles.themeLabel, { color: theme.text }]}>Create Custom Theme</Text>
               <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
-          </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>

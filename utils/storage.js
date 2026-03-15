@@ -1,4 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import PlatformStorage from './platformStorage';
+import { saveEntryToCloud, deleteEntryFromCloud } from './cloudStorage';
 
 const STORAGE_KEY = 'journal_entries';
 
@@ -10,10 +11,19 @@ export const saveEntry = async (entry) => {
       date: new Date().toISOString(),
       tags: entry.tags || [],
       eventTime: entry.eventTime || null,
+      syncedToCloud: false,
       ...entry
     };
     entries.unshift(newEntry);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    
+    // Save locally first (fast)
+    await PlatformStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    
+    // Then sync to cloud (background)
+    saveEntryToCloud(newEntry).catch(err => {
+      console.error('Cloud sync failed, will retry later:', err);
+    });
+    
     return newEntry;
   } catch (error) {
     console.error('Error saving entry:', error);
@@ -46,7 +56,7 @@ export const deleteUserTag = async (tagToDelete) => {
   try {
     const userTags = await getUserTags();
     const filteredTags = userTags.filter(tag => tag !== tagToDelete);
-    await AsyncStorage.setItem('user_tags', JSON.stringify(filteredTags));
+    await PlatformStorage.setItem('user_tags', JSON.stringify(filteredTags));
   } catch (error) {
     console.error('Error deleting tag:', error);
   }
@@ -54,7 +64,7 @@ export const deleteUserTag = async (tagToDelete) => {
 
 export const getUserTags = async () => {
   try {
-    const tags = await AsyncStorage.getItem('user_tags');
+    const tags = await PlatformStorage.getItem('user_tags');
     return tags ? JSON.parse(tags) : [];
   } catch (error) {
     return [];
@@ -66,7 +76,7 @@ export const saveUserTag = async (tag) => {
     const userTags = await getUserTags();
     if (!userTags.includes(tag)) {
       userTags.push(tag);
-      await AsyncStorage.setItem('user_tags', JSON.stringify(userTags));
+      await PlatformStorage.setItem('user_tags', JSON.stringify(userTags));
     }
   } catch (error) {
     console.error('Error saving tag:', error);
@@ -75,16 +85,16 @@ export const saveUserTag = async (tag) => {
 
 export const getTheme = async () => {
   try {
-    const theme = await AsyncStorage.getItem('app_theme');
-    return theme || 'blue';
+    const theme = await PlatformStorage.getItem('app_theme');
+    return theme || 'glassmorphism'; // Default to glassmorphism
   } catch (error) {
-    return 'blue';
+    return 'glassmorphism';
   }
 };
 
 export const saveTheme = async (themeName) => {
   try {
-    await AsyncStorage.setItem('app_theme', themeName);
+    await PlatformStorage.setItem('app_theme', themeName);
   } catch (error) {
     console.error('Error saving theme:', error);
   }
@@ -122,7 +132,7 @@ export const getTodayEntries = async () => {
 
 export const getEntries = async () => {
   try {
-    const entries = await AsyncStorage.getItem(STORAGE_KEY);
+    const entries = await PlatformStorage.getItem(STORAGE_KEY);
     return entries ? JSON.parse(entries) : [];
   } catch (error) {
     console.error('Error getting entries:', error);
@@ -134,7 +144,14 @@ export const deleteEntry = async (id) => {
   try {
     const entries = await getEntries();
     const filteredEntries = entries.filter(entry => entry.id !== id);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filteredEntries));
+    
+    // Delete locally first
+    await PlatformStorage.setItem(STORAGE_KEY, JSON.stringify(filteredEntries));
+    
+    // Then delete from cloud (background)
+    deleteEntryFromCloud(id).catch(err => {
+      console.error('Cloud delete failed:', err);
+    });
   } catch (error) {
     console.error('Error deleting entry:', error);
     throw error;
@@ -146,8 +163,20 @@ export const updateEntry = async (id, updatedEntry) => {
     const entries = await getEntries();
     const index = entries.findIndex(entry => entry.id === id);
     if (index !== -1) {
-      entries[index] = { ...entries[index], ...updatedEntry };
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      entries[index] = { 
+        ...entries[index], 
+        ...updatedEntry,
+        updatedAt: new Date().toISOString(),
+        syncedToCloud: false
+      };
+      
+      // Update locally first
+      await PlatformStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      
+      // Then sync to cloud (background)
+      saveEntryToCloud(entries[index]).catch(err => {
+        console.error('Cloud sync failed:', err);
+      });
     }
   } catch (error) {
     console.error('Error updating entry:', error);
@@ -157,7 +186,7 @@ export const updateEntry = async (id, updatedEntry) => {
 
 export const getDarkMode = async () => {
   try {
-    const darkMode = await AsyncStorage.getItem('dark_mode');
+    const darkMode = await PlatformStorage.getItem('dark_mode');
     return darkMode === 'true';
   } catch (error) {
     return false;
@@ -166,7 +195,7 @@ export const getDarkMode = async () => {
 
 export const saveDarkMode = async (isDark) => {
   try {
-    await AsyncStorage.setItem('dark_mode', isDark.toString());
+    await PlatformStorage.setItem('dark_mode', isDark.toString());
   } catch (error) {
     console.error('Error saving dark mode:', error);
   }
@@ -174,7 +203,7 @@ export const saveDarkMode = async (isDark) => {
 
 export const getRecycleBin = async () => {
   try {
-    const data = await AsyncStorage.getItem('recycleBin');
+    const data = await PlatformStorage.getItem('recycleBin');
     return data ? JSON.parse(data) : [];
   } catch (error) {
     console.error('Error getting recycle bin:', error);
@@ -184,7 +213,7 @@ export const getRecycleBin = async () => {
 
 export const saveToRecycleBin = async (entries) => {
   try {
-    await AsyncStorage.setItem('recycleBin', JSON.stringify(entries));
+    await PlatformStorage.setItem('recycleBin', JSON.stringify(entries));
   } catch (error) {
     console.error('Error saving to recycle bin:', error);
   }
