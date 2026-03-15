@@ -4,30 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { auth } from '../../backend/firebase/config';
 import { createUserWithEmailAndPassword, updateProfile, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
-import * as Google from 'expo-auth-session/providers/google';
-import Constants from 'expo-constants';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 const validatePassword = (pw) => pw.length >= 6;
 
 export default function SignupScreen({ navigation }) {
   const { theme } = useTheme();
-  const googleClientId = Constants.expoConfig?.extra?.googleClientId;
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: googleClientId,
-    useProxy: true,
-  });
-
-  React.useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential)
-        .then(() => navigation.replace('Home'))
-        .catch((e) => setErrors(prev => ({ ...prev, general: e.message })));
-    }
-  }, [response]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,6 +20,18 @@ export default function SignupScreen({ navigation }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const { data } = await GoogleSignin.signIn();
+      const credential = GoogleAuthProvider.credential(data.idToken);
+      await signInWithCredential(auth, credential);
+      navigation.replace('Home');
+    } catch (e) {
+      setErrors({ general: e.message });
+    }
+  };
 
   const validate = () => {
     const e = {};
@@ -65,11 +60,6 @@ export default function SignupScreen({ navigation }) {
       setLoading(false);
     }
   };
-
-  const inputStyle = (field) => [
-    styles.input,
-    { borderColor: errors[field] ? theme.danger : theme.border, color: theme.text, backgroundColor: theme.surface },
-  ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -164,7 +154,7 @@ export default function SignupScreen({ navigation }) {
           <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
         </View>
 
-        <TouchableOpacity style={[styles.socialButton, { borderColor: theme.border, backgroundColor: theme.surface }]} onPress={() => promptAsync()} disabled={!request}>
+        <TouchableOpacity style={[styles.socialButton, { borderColor: theme.border, backgroundColor: theme.surface }]} onPress={handleGoogleSignIn}>
           <Ionicons name="logo-google" size={18} color="#4285F4" />
           <Text style={[styles.socialButtonText, { color: theme.text }]}>Continue with Google</Text>
         </TouchableOpacity>

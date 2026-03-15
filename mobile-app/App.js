@@ -19,6 +19,8 @@ import CustomThemeScreen from './screens/CustomThemeScreen';
 import NavigateScreen from './screens/NavigateScreen';
 import OverviewScreen from './screens/OverviewScreen';
 import CloudSettingsScreen from './screens/CloudSettingsScreen';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
 
 const Stack = createStackNavigator();
 
@@ -93,7 +95,13 @@ function AppNavigator() {
 }
 
 export default function App() {
-  // Use null for initialPic; let AccountInfoScreen update it after login
+  React.useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: Constants.expoConfig?.extra?.googleClientId,
+      androidClientId: Constants.expoConfig?.extra?.androidGoogleClientId,
+    });
+  }, []);
+
   return (
     <ThemeProvider>
       <ProfilePicProvider initialPic={null}>

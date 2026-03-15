@@ -18,14 +18,19 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.shashwatest.journalapp"
+      "package": "com.shashwatest.journalapp",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",
-      "expo-av"
+      "expo-av",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {

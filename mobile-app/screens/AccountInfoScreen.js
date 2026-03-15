@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { auth } from '../../backend/firebase/config';
 import { useProfilePic } from '../contexts/ProfilePicContext';
 import { updateProfile, updateEmail, updatePassword, signOut } from 'firebase/auth';
-import * as ImagePicker from 'expo-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import PlatformStorage from '../../backend/utils/platformStorage';
@@ -146,21 +146,26 @@ export default function AccountInfoScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.5,
-      });
-      if (result.canceled || !result.assets?.length) { setLoading(false); return; }
-      const uri = result.assets[0].uri;
-      const downloadURL = await handleProfilePictureUpload(uri);
-      setProfilePic(downloadURL);
-      setSuccess('Profile picture updated!');
-      setTimeout(() => setSuccess(''), 3000);
+      launchImageLibrary(
+        { mediaType: 'photo', includeBase64: false, quality: 0.5 },
+        async (response) => {
+          if (response.didCancel || !response.assets?.length) { setLoading(false); return; }
+          if (response.errorCode) { setError(response.errorMessage); setLoading(false); return; }
+          try {
+            const uri = response.assets[0].uri;
+            const downloadURL = await handleProfilePictureUpload(uri);
+            setProfilePic(downloadURL);
+            setSuccess('Profile picture updated!');
+            setTimeout(() => setSuccess(''), 3000);
+          } catch (e) {
+            setError('Failed to update profile picture: ' + e.message);
+          } finally {
+            setLoading(false);
+          }
+        }
+      );
     } catch (e) {
       setError('Failed to update profile picture: ' + e.message);
-    } finally {
       setLoading(false);
     }
   };

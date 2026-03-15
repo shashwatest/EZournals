@@ -1,6 +1,6 @@
-import 'dotenv/config';
+require('dotenv/config');
 
-export default ({ config }) => {
+module.exports = ({ config }) => {
   const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
     authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -10,19 +10,13 @@ export default ({ config }) => {
     appId: process.env.FIREBASE_APP_ID,
   };
 
-  // Log to help debug
-  console.log('Firebase Config loaded:', {
-    hasApiKey: !!firebaseConfig.apiKey,
-    hasProjectId: !!firebaseConfig.projectId,
-    projectId: firebaseConfig.projectId
-  });
-
   return {
     ...config,
     extra: {
       ...config.extra,
       firebaseConfig,
       googleClientId: process.env.GOOGLE_CLIENT_ID,
+      androidGoogleClientId: process.env.ANDROID_GOOGLE_CLIENT_ID,
       facebookAppId: process.env.FACEBOOK_APP_ID,
     },
   };
