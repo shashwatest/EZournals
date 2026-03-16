@@ -58,6 +58,7 @@ export default function LoginPage() {
       display: 'flex',
       minHeight: '100vh',
       backgroundColor: theme.background,
+      overflowY: 'auto',
     },
     leftPanel: {
       flex: 1,
@@ -65,7 +66,6 @@ export default function LoginPage() {
       flexDirection: 'column',
       alignItems: 'center',
       padding: '48px',
-      overflowY: 'auto',
     },
     logo: {
       display: 'flex',
@@ -191,7 +191,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="auth-page" style={styles.container}>
       <div style={styles.leftPanel}>
         <div style={styles.logo}>
           <BookOpen size={40} color={theme.accent} />
