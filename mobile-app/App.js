@@ -96,9 +96,13 @@ function AppNavigator() {
 
 export default function App() {
   React.useEffect(() => {
+    const webId = Constants.expoConfig?.extra?.googleClientId;
+    const androidId = Constants.expoConfig?.extra?.androidGoogleClientId;
+    console.log('Google Sign-In Config:', { webId, androidId });
+    
     GoogleSignin.configure({
-      webClientId: Constants.expoConfig?.extra?.googleClientId,
-      androidClientId: Constants.expoConfig?.extra?.androidGoogleClientId,
+      webClientId: webId,
+      androidClientId: androidId,
     });
   }, []);
 

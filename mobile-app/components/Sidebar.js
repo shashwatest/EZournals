@@ -1,9 +1,7 @@
 import React from 'react';
-import { Image } from 'react-native';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { useProfilePic } from '../contexts/ProfilePicContext';
 
 export default function Sidebar({ visible, onClose, navigation, isPersistent = false }) {
   const { theme } = useTheme();
@@ -29,8 +27,6 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
       navigation.navigate(screen);
     }
   };
-
-  const { profilePic } = useProfilePic();
   
   // Desktop persistent sidebar (no modal)
   if (isPersistent) {
@@ -91,17 +87,6 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
               </TouchableOpacity>
             ))}
           </View>
-
-          <TouchableOpacity style={styles.profileSection} onPress={() => { onClose(); navigation.navigate('AccountInfo'); }}>
-            {profilePic ? (
-              <View style={styles.profilePicWrapper}>
-                <Image source={{ uri: profilePic }} style={styles.profilePic} />
-              </View>
-            ) : (
-              <Ionicons name="person-circle-outline" size={32} color={theme.text} />
-            )}
-            <Text style={[styles.profileText, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>Profile</Text>
-          </TouchableOpacity>
 
           <View style={styles.footer}>
             <Text style={[styles.version, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}>Version 1.0</Text>
