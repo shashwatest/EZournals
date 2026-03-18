@@ -57,34 +57,6 @@ const defaultThemes = {
     dangerGlow: 'rgba(196, 90, 90, 0.12)',
     buttonBg: '#E8E8E8',
   },
-  light: {
-    id: 'light',
-    name: 'Light',
-    background: '#F5F5F5',
-    surface: '#FFFFFF',
-    text: '#1A1A1A',
-    textSecondary: '#666666',
-    textLight: '#999999',
-    accent: '#6366F1',
-    primary: '#6366F1',
-    border: '#E5E5E5',
-    danger: '#EF4444',
-    success: '#10B981',
-  },
-  dark: {
-    id: 'dark',
-    name: 'Dark',
-    background: '#1A1A1A',
-    surface: '#2A2A2A',
-    text: '#FFFFFF',
-    textSecondary: '#B3B3B3',
-    textLight: '#808080',
-    accent: '#8B5CF6',
-    primary: '#8B5CF6',
-    border: '#404040',
-    danger: '#F87171',
-    success: '#34D399',
-  }
 };
 
 const ThemeContext = createContext({});
