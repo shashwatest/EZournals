@@ -92,16 +92,26 @@ export default function HomeScreen({ navigation }) {
 
   const handleDelete = async (id) => {
     const entryToDelete = entries.find(e => e.id === id);
-    if (entryToDelete) {
-      // Move to recycle bin
-      const deletedEntry = { ...entryToDelete, deletedAt: new Date().toISOString() };
-      const recycleBin = await getRecycleBin();
-      await saveToRecycleBin([...recycleBin, deletedEntry]);
-      
-      // Delete from main entries
-      await deleteEntry(id);
-      loadData();
-    }
+    if (!entryToDelete) return;
+
+    Alert.alert(
+      'Move To Recycle Bin',
+      'This entry will be removed from your journal and moved to the recycle bin until you restore or permanently delete it.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Move Entry',
+          style: 'destructive',
+          onPress: async () => {
+            const deletedEntry = { ...entryToDelete, deletedAt: new Date().toISOString() };
+            const recycleBin = await getRecycleBin();
+            await saveToRecycleBin([...recycleBin, deletedEntry]);
+            await deleteEntry(id);
+            loadData();
+          }
+        }
+      ]
+    );
   };
 
   const renderEntry = ({ item }) => (

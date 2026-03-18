@@ -7,10 +7,9 @@ import { themes } from '../styles/theme';
 import { fullSync, getLastSyncTime } from '../../backend/firebase/cloudStorage';
 import { auth } from '../../backend/firebase/config';
 import { formatSyncTime } from '../utils/entryUtils';
-import PlatformStorage from '../../backend/utils/platformStorage';
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, currentTheme, customThemes, changeTheme, isLoading, reloadThemes } = useTheme();
+  const { theme, currentTheme, customThemes, changeTheme, deleteCustomTheme, isLoading } = useTheme();
   const [userTags, setUserTags] = useState([]);
   const [newTag, setNewTag] = useState('');
   const [syncing, setSyncing] = useState(false);
@@ -82,15 +81,6 @@ export default function SettingsScreen({ navigation }) {
         }}
       ]
     );
-  };
-
-  const deleteCustomTheme = async (themeId) => {
-    const updatedThemes = customThemes.filter(t => t.id !== themeId);
-    await PlatformStorage.setItem('customThemes', JSON.stringify(updatedThemes));
-    if (currentTheme === themeId) {
-      await changeTheme('oceanTeal');
-    }
-    await reloadThemes();
   };
 
   const editCustomTheme = (themeData) => {

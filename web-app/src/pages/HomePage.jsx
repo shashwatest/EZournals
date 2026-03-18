@@ -7,6 +7,7 @@ import { collection, query, where, getDocs, doc, deleteDoc, setDoc, onSnapshot }
 import { db } from '../firebase';
 import { Plus, Search, Trash2, Edit } from 'lucide-react';
 import { sortEntries, countWords } from '../utils/entryUtils';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 // SVG noise texture for matte feel on cards
 const noiseTexture = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`;
@@ -20,8 +21,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
-
-  const isMatte = currentTheme === 'matteBlack' || currentTheme === 'matteWhite';
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const isMatteCardTheme = currentTheme === 'matteBlack' || currentTheme === 'matteWhite';
 
   useEffect(() => {
     loadEntries();
@@ -89,10 +90,6 @@ export default function HomePage() {
   );
 
   const handleDelete = async (entryId, entry) => {
-    if (!window.confirm('Move this entry to recycle bin?')) {
-      return;
-    }
-
     try {
       const deletedEntry = {
         ...entry,
@@ -103,11 +100,10 @@ export default function HomePage() {
       await deleteDoc(doc(db, 'entries', entryId));
       
       setEntries(entries.filter(e => e.id !== entryId));
-      
-      alert('Entry moved to recycle bin');
     } catch (error) {
       console.error('Error deleting entry:', error);
-      alert('Failed to delete entry: ' + error.message);
+    } finally {
+      setDeleteCandidate(null);
     }
   };
 
@@ -142,20 +138,20 @@ export default function HomePage() {
     newButton: {
       display: 'flex',
       alignItems: 'center',
-      gap: isMatte ? '0' : '8px',
+      gap: '0',
       justifyContent: 'center',
-      padding: isMatte ? '12px' : '12px 24px',
-      borderRadius: isMatte ? '10px' : '12px',
-      border: isMatte ? `1px solid ${theme.border}` : 'none',
-      backgroundColor: isMatte ? (theme.buttonBg || '#181818') : (theme.primary || theme.accent),
-      color: isMatte ? theme.accent : '#fff',
+      padding: '12px',
+      borderRadius: '10px',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.buttonBg || theme.surface,
+      color: theme.accent,
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: isMatte ? 'none' : `0 2px 8px ${theme.editGlow || 'rgba(37, 99, 235, 0.15)'}`,
-      width: isMatte ? '44px' : 'auto',
-      height: isMatte ? '44px' : 'auto',
+      boxShadow: 'none',
+      width: '44px',
+      height: '44px',
     },
     searchBar: {
       position: 'relative',
@@ -192,13 +188,13 @@ export default function HomePage() {
     },
     card: {
       padding: '24px',
-      borderRadius: isMatte ? '14px' : '16px',
+      borderRadius: isMatteCardTheme ? '14px' : '16px',
       backgroundColor: theme.surface,
-      ...(isMatte ? { backgroundImage: noiseTexture, backgroundSize: '128px 128px' } : {}),
+      ...(isMatteCardTheme ? { backgroundImage: noiseTexture, backgroundSize: '128px 128px' } : {}),
       border: `1px solid ${theme.border}`,
       cursor: 'pointer',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: isMatte ? '0 3px 6px rgba(0, 0, 0, 0.4)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
+      boxShadow: isMatteCardTheme ? '0 3px 6px rgba(0, 0, 0, 0.4)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
     },
     cardDate: {
       fontSize: '14px',
@@ -223,7 +219,7 @@ export default function HomePage() {
     tag: {
       padding: '4px 12px',
       borderRadius: '6px',
-      backgroundColor: `${theme.accent}${isMatte ? '15' : '20'}`,
+      backgroundColor: `${theme.accent}${isMatteCardTheme ? '15' : '20'}`,
       color: theme.accent,
       fontSize: '12px',
       fontWeight: '500',
@@ -238,30 +234,26 @@ export default function HomePage() {
     actionButton: {
       display: 'flex',
       alignItems: 'center',
-      gap: isMatte ? '0' : '6px',
+      gap: '0',
       justifyContent: 'center',
-      padding: isMatte ? '8px' : '8px 16px',
+      padding: '8px',
       borderRadius: '8px',
-      border: isMatte ? `1px solid ${theme.border}` : 'none',
+      border: `1px solid ${theme.border}`,
       fontSize: '13px',
       fontWeight: '500',
       cursor: 'pointer',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      backgroundColor: isMatte ? (theme.buttonBg || '#181818') : undefined,
-      color: '#fff',
-      ...(isMatte ? { width: '36px', height: '36px' } : {}),
+      backgroundColor: theme.buttonBg || theme.surface,
+      width: '36px',
+      height: '36px',
     },
     editButton: {
-      ...(isMatte 
-        ? { color: theme.edit || theme.accent, boxShadow: 'none' }
-        : { backgroundColor: theme.edit || theme.primary || '#2563EB', boxShadow: `0 2px 8px ${theme.editGlow || 'rgba(37, 99, 235, 0.15)'}` }
-      ),
+      color: theme.edit || theme.accent,
+      boxShadow: 'none',
     },
     deleteButton: {
-      ...(isMatte
-        ? { color: theme.danger, boxShadow: 'none' }
-        : { backgroundColor: theme.danger || '#DC2626', boxShadow: `0 2px 8px ${theme.dangerGlow || 'rgba(220, 38, 38, 0.15)'}` }
-      ),
+      color: theme.danger,
+      boxShadow: 'none',
     },
     empty: {
       textAlign: 'center',
@@ -275,18 +267,14 @@ export default function HomePage() {
   };
 
   // Hover behavior adapts to theme
-  const cardHoverIn = isMatte
+  const cardHoverIn = isMatteCardTheme
     ? (e) => { e.currentTarget.style.transform = 'translateY(-1.5px) scale(1.008)'; e.currentTarget.style.boxShadow = '0 5px 10px rgba(0, 0, 0, 0.5)'; }
     : (e) => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)'; e.currentTarget.style.backgroundColor = theme.surfaceHover || theme.surface; };
-  const cardHoverOut = isMatte
+  const cardHoverOut = isMatteCardTheme
     ? (e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 3px 6px rgba(0, 0, 0, 0.4)'; }
     : (e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'; e.currentTarget.style.backgroundColor = theme.surface; };
-  const btnHoverIn = isMatte
-    ? (e) => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.backgroundColor = '#232323'; }
-    : (e) => { e.currentTarget.style.transform = 'scale(1.05)'; };
-  const btnHoverOut = isMatte
-    ? (e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = theme.buttonBg || '#181818'; }
-    : (e) => { e.currentTarget.style.transform = 'scale(1)'; };
+  const btnHoverIn = (e) => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.backgroundColor = theme.buttonHoverBg || theme.buttonBg || theme.surfaceHover || theme.surface; };
+  const btnHoverOut = (e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = theme.buttonBg || theme.surface; };
 
   return (
     <div style={styles.container}>
@@ -306,7 +294,6 @@ export default function HomePage() {
             onMouseLeave={btnHoverOut}
           >
             <Plus size={20} />
-            {!isMatte && <span>New Entry</span>}
           </button>
         </div>
         
@@ -370,28 +357,37 @@ export default function HomePage() {
                     onMouseEnter={btnHoverIn}
                     onMouseLeave={btnHoverOut}
                   >
-                    <Edit size={isMatte ? 16 : 14} />
-                    {!isMatte && <span>Edit</span>}
+                    <Edit size={16} />
                   </button>
                   <button
                     style={{ ...styles.actionButton, ...styles.deleteButton }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(entry.id, entry);
+                      setDeleteCandidate(entry);
                     }}
                     title="Delete"
                     onMouseEnter={btnHoverIn}
                     onMouseLeave={btnHoverOut}
                   >
-                    <Trash2 size={isMatte ? 16 : 14} />
-                    {!isMatte && <span>Delete</span>}
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+    </div>
+      <ConfirmDialog
+        open={Boolean(deleteCandidate)}
+        title="Move Entry To Recycle Bin?"
+        message="The entry will be removed from your journal and moved to the recycle bin until you restore it or permanently delete it."
+        confirmLabel="Move Entry"
+        cancelLabel="Cancel"
+        confirmTone="danger"
+        onCancel={() => setDeleteCandidate(null)}
+        onConfirm={() => handleDelete(deleteCandidate.id, deleteCandidate)}
+        theme={theme}
+      />
     </div>
   );
 }

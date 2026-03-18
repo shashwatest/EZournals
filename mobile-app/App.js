@@ -21,80 +21,85 @@ import OverviewScreen from './screens/OverviewScreen';
 import CloudSettingsScreen from './screens/CloudSettingsScreen';
 import AISettingsScreen from './screens/AISettingsScreen';
 import InsightsScreen from './screens/InsightsScreen';
+import AppGlassBackground from './components/AppGlassBackground';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Constants from 'expo-constants';
+import { View, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
 
 function AppNavigator() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   
   if (!theme) {
     return null;
   }
   
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="Login"
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: theme.background },
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
-          cardStyleInterpolator: ({ current, layouts }) => {
-            return {
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-                opacity: current.progress.interpolate({
-                  inputRange: [0, 0.3, 1],
-                  outputRange: [0, 0.5, 1],
-                }),
+    <View style={styles.appShell}>
+      <AppGlassBackground />
+      <NavigationContainer>
+        <Stack.Navigator 
+          initialRouteName="Login"
+          screenOptions={{
+            headerShown: false,
+            cardStyle: { backgroundColor: currentTheme === 'glassmorphism' ? 'transparent' : theme.background },
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            cardStyleInterpolator: ({ current, layouts }) => {
+              return {
+                cardStyle: {
+                  transform: [
+                    {
+                      translateX: current.progress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [layouts.screen.width, 0],
+                      }),
+                    },
+                  ],
+                  opacity: current.progress.interpolate({
+                    inputRange: [0, 0.3, 1],
+                    outputRange: [0, 0.5, 1],
+                  }),
+                },
+              };
+            },
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
               },
-            };
-          },
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 300,
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 250,
+                },
               },
             },
-            close: {
-              animation: 'timing',
-              config: {
-                duration: 250,
-              },
-            },
-          },
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Signup" component={SignupScreen} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="AddEntry" component={AddEntryScreen} />
-        <Stack.Screen name="EditEntry" component={EditEntryScreen} />
-        <Stack.Screen name="ViewEntry" component={ViewEntryScreen} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="Navigate" component={NavigateScreen} />
-        <Stack.Screen name="Overview" component={OverviewScreen} />
-        <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
-        <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
-        <Stack.Screen name="UISettings" component={UISettingsScreen} />
-        <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
-        <Stack.Screen name="CloudSettings" component={CloudSettingsScreen} />
-        <Stack.Screen name="AISettings" component={AISettingsScreen} />
-        <Stack.Screen name="Insights" component={InsightsScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+          }}
+        >
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="AddEntry" component={AddEntryScreen} />
+          <Stack.Screen name="EditEntry" component={EditEntryScreen} />
+          <Stack.Screen name="ViewEntry" component={ViewEntryScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Navigate" component={NavigateScreen} />
+          <Stack.Screen name="Overview" component={OverviewScreen} />
+          <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
+          <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
+          <Stack.Screen name="UISettings" component={UISettingsScreen} />
+          <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
+          <Stack.Screen name="CloudSettings" component={CloudSettingsScreen} />
+          <Stack.Screen name="AISettings" component={AISettingsScreen} />
+          <Stack.Screen name="Insights" component={InsightsScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </View>
   );
 }
 
@@ -119,3 +124,10 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  appShell: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+});

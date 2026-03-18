@@ -7,12 +7,13 @@ import { auth } from '../firebase';
 import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen, Trash2, Sparkles, TrendingUp } from 'lucide-react';
 
 export default function DashboardLayout() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = async () => {
+    localStorage.removeItem('theme');
     localStorage.removeItem('uiSettings');
     localStorage.removeItem('customThemes');
     
@@ -43,6 +44,7 @@ export default function DashboardLayout() {
       height: '100vh',
       backgroundColor: theme.background,
       color: theme.text,
+      position: 'relative',
     },
     sidebar: {
       width: '260px',
@@ -51,6 +53,9 @@ export default function DashboardLayout() {
       display: 'flex',
       flexDirection: 'column',
       padding: '24px 12px',
+      backdropFilter: currentTheme === 'glassmorphism' ? 'blur(28px)' : 'none',
+      WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(28px)' : 'none',
+      boxShadow: currentTheme === 'glassmorphism' ? '0 24px 60px rgba(0, 0, 0, 0.32)' : 'none',
     },
     logo: {
       display: 'flex',
@@ -120,6 +125,7 @@ export default function DashboardLayout() {
     main: {
       flex: 1,
       overflow: 'auto',
+      position: 'relative',
     },
     sectionDivider: {
       marginTop: '24px',

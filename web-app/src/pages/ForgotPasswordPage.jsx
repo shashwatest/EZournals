@@ -6,7 +6,7 @@ import { auth } from '../firebase';
 import { ArrowLeft, Mail } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -50,7 +50,10 @@ export default function ForgotPasswordPage() {
       padding: '40px',
       width: '100%',
       maxWidth: '450px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+      boxShadow: currentTheme === 'glassmorphism' ? '0 28px 80px rgba(0, 0, 0, 0.36)' : '0 4px 20px rgba(0,0,0,0.1)',
+      border: `1px solid ${theme.border}`,
+      backdropFilter: currentTheme === 'glassmorphism' ? 'blur(30px)' : 'none',
+      WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(30px)' : 'none',
     },
     backButton: {
       display: 'flex',
@@ -104,9 +107,9 @@ export default function ForgotPasswordPage() {
     button: {
       padding: '14px',
       borderRadius: '8px',
-      border: 'none',
-      backgroundColor: theme.accent,
-      color: '#fff',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.buttonBg || theme.surface,
+      color: theme.accent,
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',

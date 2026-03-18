@@ -1,72 +1,72 @@
 // Glassmorphism theme - Pitch black with purple edge glow
 export const glassmorphismTheme = {
-  background: '#000000', // Pitch black
-  surface: '#0a0a0a', // Almost black for cards
-  surfaceHover: '#141414', // Slightly lighter on hover
+  background: 'rgba(0, 0, 0, 0.78)',
+  surface: 'rgba(255, 255, 255, 0.08)',
+  surfaceHover: 'rgba(255, 255, 255, 0.12)',
   text: '#FFFFFF',
-  textSecondary: '#D1D1E0',
-  textLight: '#9090A8',
-  accent: '#A78BFA', // Bright purple (lighter for better visibility)
-  accentGlow: 'rgba(167, 139, 250, 0.6)',
-  primary: '#FFFFFF', // White for primary buttons
-  danger: '#FF6B9D',
-  border: 'rgba(167, 139, 250, 0.25)', // Purple glow border
-  borderSolid: '#1a1a1a',
-  borderGlow: 'rgba(167, 139, 250, 0.6)',
-  success: '#4ECDC4',
-  warning: '#FFE66D',
+  textSecondary: 'rgba(255, 255, 255, 0.78)',
+  textLight: 'rgba(255, 255, 255, 0.5)',
+  accent: '#FFFFFF',
+  accentGlow: 'rgba(255, 255, 255, 0.32)',
+  primary: '#FFFFFF',
+  danger: '#FF8DA1',
+  border: 'rgba(255, 255, 255, 0.16)',
+  borderSolid: 'rgba(255, 255, 255, 0.1)',
+  borderGlow: 'rgba(255, 255, 255, 0.26)',
+  success: '#9EF7E7',
+  warning: '#FFE7A6',
   heading: '#FFFFFF',
   headingSize: 32,
   subheadingSize: 22,
   fontFamily: 'System',
   cardRadius: 16,
-  // Card with edge glow
   glass: {
-    backgroundColor: '#0a0a0a', // Pitch black card
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.25)', // Purple edge glow
-    shadowColor: '#A78BFA',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  // Bright purple button
-  glossyButton: {
-    backgroundColor: '#A78BFA', // Bright purple
-    borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.6)',
-    shadowColor: '#A78BFA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.7,
-    shadowRadius: 14,
-    elevation: 10,
-  },
-  // White button variant
-  whiteButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  glossyButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 8,
   },
-  // Hover/Press effects
+  whiteButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 8,
+  },
   buttonHover: {
-    backgroundColor: '#B99DFF', // Lighter purple on hover
-    borderColor: 'rgba(185, 157, 255, 0.7)',
-    shadowOpacity: 0.9,
-    transform: [{ scale: 1.03 }],
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    shadowOpacity: 0.1,
+    transform: [{ scale: 1.018 }],
   },
   cardShadow: {
-    shadowColor: '#A78BFA',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 22,
     elevation: 10,
-  }
+  },
+  edit: '#FFFFFF',
+  editGlow: 'rgba(255, 255, 255, 0.12)',
+  dangerGlow: 'rgba(255, 141, 161, 0.16)',
+  buttonBg: 'rgba(255, 255, 255, 0.08)',
 };
 
 // Matte Black theme – calm, elegant, solid block-on-wall feel
@@ -241,7 +241,37 @@ export const classyBWTheme = {
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 8
-  }
+  },
+  glossyButton: {
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#333333',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1,
+    elevation: 3,
+  },
+  whiteButton: {
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#333333',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  buttonHover: {
+    backgroundColor: '#1B1B1B',
+    borderColor: '#404040',
+    shadowOpacity: 0.35,
+    transform: [{ scale: 1.012 }],
+  },
+  edit: '#FFD700',
+  editGlow: 'rgba(255, 215, 0, 0.12)',
+  dangerGlow: 'rgba(255, 82, 82, 0.12)',
+  buttonBg: '#141414',
 };
 
 export const themes = {
@@ -252,6 +282,7 @@ export const themes = {
   oceanTeal: {
     background: '#E0F2F1',
     surface: '#FFFFFF',
+    surfaceHover: '#F3FBFA',
     text: '#004D40',
     textSecondary: '#00695C',
     textLight: '#80CBC4',
@@ -260,7 +291,37 @@ export const themes = {
     danger: '#D32F2F',
     border: '#B2DFDB',
     success: '#388E3C',
-    warning: '#F57C00'
+    warning: '#F57C00',
+    glossyButton: {
+      backgroundColor: '#E7F6F4',
+      borderWidth: 1,
+      borderColor: '#B2DFDB',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 1,
+      elevation: 3,
+    },
+    whiteButton: {
+      backgroundColor: '#E7F6F4',
+      borderWidth: 1,
+      borderColor: '#B2DFDB',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 1,
+      elevation: 2,
+    },
+    buttonHover: {
+      backgroundColor: '#D9F0ED',
+      borderColor: '#9FD3CC',
+      shadowOpacity: 0.1,
+      transform: [{ scale: 1.012 }],
+    },
+    edit: '#00897B',
+    editGlow: 'rgba(0, 137, 123, 0.12)',
+    dangerGlow: 'rgba(211, 47, 47, 0.12)',
+    buttonBg: '#E7F6F4',
   },
   custom: glassmorphismTheme // Default to glassmorphism
 };

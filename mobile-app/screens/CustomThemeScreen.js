@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { classyBWTheme } from '../styles/theme';
 
 export default function CustomThemeScreen({ navigation, route }) {
-  const { theme, saveCustomTheme, customThemes } = useTheme();
+  const { theme, saveCustomTheme, updateCustomTheme } = useTheme();
   const editTheme = route?.params?.editTheme;
   const [customColors, setCustomColors] = useState(editTheme || classyBWTheme);
   const [selectedField, setSelectedField] = useState(null);
@@ -55,7 +54,7 @@ export default function CustomThemeScreen({ navigation, route }) {
         ...customColors,
         name: themeName
       };
-      await updateCustomTheme(updatedTheme);
+      await updateCustomTheme(updatedTheme.id, updatedTheme);
     } else {
       // Create new theme
       const themeData = {
@@ -70,14 +69,6 @@ export default function CustomThemeScreen({ navigation, route }) {
   const resetToDefault = () => {
     setCustomColors(classyBWTheme);
   };
-
-  const updateCustomTheme = async (updatedTheme) => {
-    const updatedThemes = customThemes.map(t => 
-      t.id === updatedTheme.id ? updatedTheme : t
-    );
-    await AsyncStorage.setItem('customThemes', JSON.stringify(updatedThemes));
-  };
-
   const styles = createStyles(theme);
 
   return (

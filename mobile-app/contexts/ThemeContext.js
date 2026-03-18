@@ -17,7 +17,7 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('matteWhite');
+  const [currentTheme, setCurrentTheme] = useState('glassmorphism');
   const [customThemes, setCustomThemes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const syncPreferencesRef = useRef(false);
@@ -66,10 +66,8 @@ export const ThemeProvider = ({ children }) => {
     return merged;
   };
   const getActiveTheme = () => {
-    if (currentTheme && currentTheme.startsWith('custom-')) {
-      const customTheme = customThemes.find(t => t.id === currentTheme);
-      return customTheme ? mergeWithDefault(customTheme) : themes.glassmorphism;
-    }
+    const customTheme = customThemes.find(t => t.id === currentTheme);
+    if (customTheme) return mergeWithDefault(customTheme);
     // If theme is missing or incomplete, fallback to glassmorphism
     const themeObj = themes[currentTheme];
     if (!themeObj) return themes.glassmorphism;
@@ -77,29 +75,45 @@ export const ThemeProvider = ({ children }) => {
     return mergeWithDefault(themeObj);
   };
 
+  const isValidThemeSelection = (themeName, availableCustomThemes = customThemes) => {
+    if (!themeName) return false;
+    if (themes[themeName]) return true;
+    return availableCustomThemes.some(t => t.id === themeName);
+  };
+
   const loadTheme = async () => {
     try {
-      const themeName = await getTheme();
-      setCurrentTheme(themeName);
+      let themeName = await getTheme();
       
       // Load all custom themes
+      let loadedCustomThemes = [];
       const customThemesData = await PlatformStorage.getItem('customThemes');
       if (customThemesData) {
-        setCustomThemes(JSON.parse(customThemesData));
+        loadedCustomThemes = JSON.parse(customThemesData);
+        setCustomThemes(loadedCustomThemes);
       }
 
       // If sync was enabled, fetch latest theme from cloud
       const savedSync = await PlatformStorage.getItem('syncPreferences');
       if (savedSync && JSON.parse(savedSync)) {
         const prefs = await getPreferencesFromCloud();
-        if (prefs?.currentTheme) {
-          setCurrentTheme(prefs.currentTheme);
-          await saveTheme(prefs.currentTheme);
-        }
         if (prefs?.customThemes) {
-          setCustomThemes(prefs.customThemes);
-          await PlatformStorage.setItem('customThemes', JSON.stringify(prefs.customThemes));
+          loadedCustomThemes = prefs.customThemes;
+          setCustomThemes(loadedCustomThemes);
+          await PlatformStorage.setItem('customThemes', JSON.stringify(loadedCustomThemes));
         }
+        if (prefs?.currentTheme) {
+          themeName = prefs.currentTheme;
+        }
+      }
+
+      const nextTheme = isValidThemeSelection(themeName, loadedCustomThemes)
+        ? themeName
+        : 'glassmorphism';
+
+      setCurrentTheme(nextTheme);
+      if (nextTheme !== themeName) {
+        await saveTheme(nextTheme);
       }
     } catch (error) {
       console.error('Error loading theme:', error);
@@ -133,15 +147,47 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  const updateCustomTheme = async (themeId, themeData) => {
+    try {
+      const updatedThemes = customThemes.map(t =>
+        t.id === themeId ? { ...themeData, id: themeId } : t
+      );
+      await PlatformStorage.setItem('customThemes', JSON.stringify(updatedThemes));
+      setCustomThemes(updatedThemes);
+      if (syncPreferencesRef.current) {
+        savePreferencesToCloud({ customThemes: updatedThemes });
+      }
+    } catch (error) {
+      console.error('Error updating custom theme:', error);
+    }
+  };
+
+  const deleteCustomTheme = async (themeId) => {
+    try {
+      const updatedThemes = customThemes.filter(t => t.id !== themeId);
+      const nextTheme = currentTheme === themeId ? 'glassmorphism' : currentTheme;
+
+      await PlatformStorage.setItem('customThemes', JSON.stringify(updatedThemes));
+      if (nextTheme !== currentTheme) {
+        await saveTheme(nextTheme);
+      }
+
+      setCustomThemes(updatedThemes);
+      setCurrentTheme(nextTheme);
+
+      if (syncPreferencesRef.current) {
+        savePreferencesToCloud({
+          currentTheme: nextTheme,
+          customThemes: updatedThemes,
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting custom theme:', error);
+    }
+  };
+
   useEffect(() => {
     loadTheme();
-    // If no theme is set, force glassmorphism as default
-    getTheme().then(themeName => {
-      if (!themeName || !themes[themeName]) {
-        saveTheme('glassmorphism');
-        setCurrentTheme('glassmorphism');
-      }
-    });
   }, []);
 
   const reloadThemes = async () => {
@@ -167,6 +213,8 @@ export const ThemeProvider = ({ children }) => {
     isLoading,
     changeTheme,
     saveCustomTheme,
+    updateCustomTheme,
+    deleteCustomTheme,
     reloadThemes,
     enableThemeSync,
   };

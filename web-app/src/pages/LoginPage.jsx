@@ -9,7 +9,7 @@ const googleProvider = new GoogleAuthProvider();
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
 export default function LoginPage() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,6 +81,13 @@ export default function LoginPage() {
     form: {
       width: '100%',
       maxWidth: '400px',
+      backgroundColor: currentTheme === 'glassmorphism' ? theme.surface : 'transparent',
+      border: currentTheme === 'glassmorphism' ? `1px solid ${theme.border}` : 'none',
+      borderRadius: currentTheme === 'glassmorphism' ? '24px' : '0',
+      padding: currentTheme === 'glassmorphism' ? '28px' : '0',
+      backdropFilter: currentTheme === 'glassmorphism' ? 'blur(30px)' : 'none',
+      WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(30px)' : 'none',
+      boxShadow: currentTheme === 'glassmorphism' ? '0 28px 80px rgba(0, 0, 0, 0.36)' : 'none',
     },
     title: {
       fontSize: '28px',
@@ -127,9 +134,9 @@ export default function LoginPage() {
       width: '100%',
       padding: '14px',
       borderRadius: '12px',
-      border: 'none',
-      backgroundColor: theme.accent,
-      color: '#fff',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.buttonBg || theme.surface,
+      color: theme.accent,
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',

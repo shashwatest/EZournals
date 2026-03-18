@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, doc, deleteDoc, setDoc } from 'fireb
 import { db } from '../firebase';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { formatDate } from '../utils/entryUtils';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function RecycleBinPage() {
   const { theme } = useTheme();
@@ -13,6 +14,7 @@ export default function RecycleBinPage() {
   const navigate = useNavigate();
   const [deletedEntries, setDeletedEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dialogState, setDialogState] = useState({ type: null, entry: null });
 
   useEffect(() => {
     loadDeletedEntries();
@@ -50,24 +52,21 @@ export default function RecycleBinPage() {
       await deleteDoc(doc(db, 'deletedEntries', entry.id));
       
       setDeletedEntries(deletedEntries.filter(e => e.id !== entry.id));
-      alert('Entry restored successfully!');
     } catch (error) {
       console.error('Error restoring entry:', error);
-      alert('Failed to restore entry');
+    } finally {
+      setDialogState({ type: null, entry: null });
     }
   };
 
   const permanentDelete = async (entryId) => {
-    if (!window.confirm('This will permanently delete the entry. This cannot be undone.')) {
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, 'deletedEntries', entryId));
       setDeletedEntries(deletedEntries.filter(e => e.id !== entryId));
     } catch (error) {
       console.error('Error deleting entry:', error);
-      alert('Failed to delete entry');
+    } finally {
+      setDialogState({ type: null, entry: null });
     }
   };
 
@@ -208,14 +207,14 @@ export default function RecycleBinPage() {
                   <div style={styles.entryActions}>
                     <button
                       style={{ ...styles.actionButton, ...styles.restoreButton }}
-                      onClick={() => restoreEntry(entry)}
+                      onClick={() => setDialogState({ type: 'restore', entry })}
                       title="Restore"
                     >
                       <RefreshCw size={18} />
                     </button>
                     <button
                       style={{ ...styles.actionButton, ...styles.deleteButton }}
-                      onClick={() => permanentDelete(entry.id)}
+                      onClick={() => setDialogState({ type: 'delete', entry })}
                       title="Delete Forever"
                     >
                       <Trash2 size={18} />
@@ -231,6 +230,28 @@ export default function RecycleBinPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={Boolean(dialogState.entry)}
+        title={dialogState.type === 'restore' ? 'Restore Entry?' : 'Delete Entry Forever?'}
+        message={
+          dialogState.type === 'restore'
+            ? 'The entry will be restored to your journal and removed from the recycle bin.'
+            : 'This will permanently delete the entry. This action cannot be undone.'
+        }
+        confirmLabel={dialogState.type === 'restore' ? 'Restore Entry' : 'Delete Forever'}
+        cancelLabel="Cancel"
+        confirmTone={dialogState.type === 'restore' ? 'accent' : 'danger'}
+        onCancel={() => setDialogState({ type: null, entry: null })}
+        onConfirm={() => {
+          if (!dialogState.entry) return;
+          if (dialogState.type === 'restore') {
+            restoreEntry(dialogState.entry);
+          } else {
+            permanentDelete(dialogState.entry.id);
+          }
+        }}
+        theme={theme}
+      />
     </div>
   );
 }

@@ -21,18 +21,30 @@ export default function RecycleBinScreen({ navigation }) {
   };
 
   const restoreEntry = async (entry) => {
-    const { deletedAt, ...entryData } = entry;
-    
-    const { getEntries } = require('../../backend/utils/storage');
-    const currentEntries = await getEntries();
-    const updatedEntries = [entryData, ...currentEntries];
-    await PlatformStorage.setItem('journal_entries', JSON.stringify(updatedEntries));
-    
-    const remainingDeleted = deletedEntries.filter(e => e.id !== entry.id);
-    await saveToRecycleBin(remainingDeleted);
-    setDeletedEntries(remainingDeleted);
-    
-    Alert.alert('Restored', 'Entry has been restored to your journal');
+    Alert.alert(
+      'Restore Entry',
+      'This entry will be restored to your journal and removed from the recycle bin.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          onPress: async () => {
+            const { deletedAt, ...entryData } = entry;
+            
+            const { getEntries } = require('../../backend/utils/storage');
+            const currentEntries = await getEntries();
+            const updatedEntries = [entryData, ...currentEntries];
+            await PlatformStorage.setItem('journal_entries', JSON.stringify(updatedEntries));
+            
+            const remainingDeleted = deletedEntries.filter(e => e.id !== entry.id);
+            await saveToRecycleBin(remainingDeleted);
+            setDeletedEntries(remainingDeleted);
+            
+            Alert.alert('Restored', 'Entry has been restored to your journal');
+          }
+        }
+      ]
+    );
   };
 
   const permanentDelete = async (entryId) => {

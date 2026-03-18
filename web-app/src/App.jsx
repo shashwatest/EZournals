@@ -21,6 +21,7 @@ import CloudSettingsPage from './pages/CloudSettingsPage';
 import UISettingsPage from './pages/UISettingsPage';
 import AISettingsPage from './pages/AISettingsPage';
 import InsightsPage from './pages/InsightsPage';
+import AppGlassBackground from './components/AppGlassBackground';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -48,28 +49,33 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <UISettingsProvider>
-            <Routes>
-              <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-              <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
-              <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
-              
-              <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-                <Route index element={<HomePage />} />
-                <Route path="add" element={<AddEntryPage />} />
-                <Route path="entry/:id" element={<ViewEntryPage />} />
-                <Route path="edit/:id" element={<EditEntryPage />} />
-                <Route path="navigate" element={<NavigatePage />} />
-                <Route path="overview" element={<OverviewPage />} />
-                <Route path="recycle-bin" element={<RecycleBinPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="profile" element={<ProfilePage />} />
-                <Route path="custom-theme" element={<CustomThemePage />} />
-                <Route path="cloud-settings" element={<CloudSettingsPage />} />
-                <Route path="ui-settings" element={<UISettingsPage />} />
-                <Route path="ai-settings" element={<AISettingsPage />} />
-                <Route path="insights" element={<InsightsPage />} />
-              </Route>
-            </Routes>
+            <>
+              <AppGlassBackground />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <Routes>
+                  <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+                  <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+                  <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+                  
+                  <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+                    <Route index element={<HomePage />} />
+                    <Route path="add" element={<AddEntryPage />} />
+                    <Route path="entry/:id" element={<ViewEntryPage />} />
+                    <Route path="edit/:id" element={<EditEntryPage />} />
+                    <Route path="navigate" element={<NavigatePage />} />
+                    <Route path="overview" element={<OverviewPage />} />
+                    <Route path="recycle-bin" element={<RecycleBinPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="custom-theme" element={<CustomThemePage />} />
+                    <Route path="cloud-settings" element={<CloudSettingsPage />} />
+                    <Route path="ui-settings" element={<UISettingsPage />} />
+                    <Route path="ai-settings" element={<AISettingsPage />} />
+                    <Route path="insights" element={<InsightsPage />} />
+                  </Route>
+                </Routes>
+              </div>
+            </>
           </UISettingsProvider>
         </ThemeProvider>
       </AuthProvider>

@@ -9,7 +9,7 @@ const googleProvider = new GoogleAuthProvider();
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
 export default function SignupPage() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -91,6 +91,14 @@ export default function SignupPage() {
       maxWidth: '400px',
       paddingTop: '32px',
       paddingBottom: '32px',
+      backgroundColor: currentTheme === 'glassmorphism' ? theme.surface : 'transparent',
+      border: currentTheme === 'glassmorphism' ? `1px solid ${theme.border}` : 'none',
+      borderRadius: currentTheme === 'glassmorphism' ? '24px' : '0',
+      paddingLeft: currentTheme === 'glassmorphism' ? '28px' : '0',
+      paddingRight: currentTheme === 'glassmorphism' ? '28px' : '0',
+      backdropFilter: currentTheme === 'glassmorphism' ? 'blur(30px)' : 'none',
+      WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(30px)' : 'none',
+      boxShadow: currentTheme === 'glassmorphism' ? '0 28px 80px rgba(0, 0, 0, 0.36)' : 'none',
     },
     title: {
       fontSize: '28px',
@@ -137,9 +145,9 @@ export default function SignupPage() {
       width: '100%',
       padding: '14px',
       borderRadius: '12px',
-      border: 'none',
-      backgroundColor: theme.accent,
-      color: '#fff',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.buttonBg || theme.surface,
+      color: theme.accent,
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',
