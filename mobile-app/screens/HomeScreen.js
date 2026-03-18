@@ -119,7 +119,7 @@ export default function HomeScreen({ navigation }) {
   
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}> 
-      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.background} translucent={false} />
       
       {/* Desktop: Persistent Sidebar */}
       {isDesktop && (
@@ -215,10 +215,10 @@ export default function HomeScreen({ navigation }) {
       )}
       
       <TouchableOpacity 
-        style={[styles.floatingAddButton, { backgroundColor: theme.accent }]}
+        style={styles.floatingAddButton}
         onPress={() => navigation.navigate('AddEntry')}
       >
-        <Ionicons name="create-outline" size={24} color="white" />
+        <Ionicons name="create-outline" size={24} color={theme.accent} />
       </TouchableOpacity>
       
       {/* Mobile: Overlay Sidebar */}
@@ -264,12 +264,9 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     paddingHorizontal: isDesktop ? 32 : 16,
     paddingVertical: isDesktop ? 20 : 24,
     paddingTop: isMobile ? 52 : 20,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
   greeting: {
     fontSize: fontSizes.header,
@@ -313,17 +310,19 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     position: 'absolute',
     bottom: 24,
     right: 24,
-    backgroundColor: '#2C3E50',
+    backgroundColor: theme.glossyButton?.backgroundColor || '#E8E8E8',
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 3
   },
   listContent: {
     paddingTop: spacing.card,
@@ -344,13 +343,13 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
   emptyText: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#7F8C8D',
+    color: theme.textSecondary,
     marginTop: 16,
     marginBottom: 8
   },
   emptySubtext: {
     fontSize: 16,
-    color: '#BDC3C7',
+    color: theme.textLight,
     textAlign: 'center'
   },
   searchContainer: {
@@ -361,11 +360,8 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   searchInput: {
     flex: 1,

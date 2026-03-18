@@ -13,7 +13,6 @@ export default function DashboardLayout() {
   const location = useLocation();
 
   const handleLogout = async () => {
-    // Clear localStorage
     localStorage.removeItem('uiSettings');
     localStorage.removeItem('customThemes');
     

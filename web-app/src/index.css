@@ -23,7 +23,7 @@ body {
   overflow: visible;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar – matte neutral */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -34,12 +34,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(167, 139, 250, 0.3);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(167, 139, 250, 0.5);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 @keyframes spin {

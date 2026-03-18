@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Platform, Animated } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Platform, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function GlassButton({ 
@@ -8,9 +8,12 @@ export default function GlassButton({
   style, 
   textStyle,
   disabled = false,
-  icon = null 
+  icon = null,
+  iconOnly = false,
+  themeOverride = null,
 }) {
-  const { theme } = useTheme();
+  const { theme: contextTheme } = useTheme();
+  const theme = themeOverride || contextTheme;
   const [isPressed, setIsPressed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -27,6 +30,7 @@ export default function GlassButton({
 
   const buttonStyle = [
     styles.button,
+    iconOnly && styles.iconOnlyButton,
     theme.glossyButton && {
       backgroundColor: theme.glossyButton.backgroundColor,
       borderWidth: theme.glossyButton.borderWidth,
@@ -63,9 +67,11 @@ export default function GlassButton({
       {...webProps}
     >
       {icon}
-      <Text style={[styles.text, { color: theme.text }, textStyle]}>
-        {children}
-      </Text>
+      {!iconOnly && children && (
+        <Text style={[styles.text, { color: theme.text }, textStyle]}>
+          {children}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -80,6 +86,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     transition: 'all 0.3s ease',
+  },
+  iconOnlyButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   text: {
     fontSize: 16,

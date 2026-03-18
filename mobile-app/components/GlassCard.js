@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
-export default function GlassCard({ children, style, onPress }) {
-  const { theme } = useTheme();
+export default function GlassCard({ children, style, onPress, themeOverride }) {
+  const { theme: contextTheme } = useTheme();
+  const theme = themeOverride || contextTheme;
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseEnter = () => {
@@ -16,6 +17,7 @@ export default function GlassCard({ children, style, onPress }) {
 
   const cardStyle = [
     styles.card,
+    { borderRadius: theme.cardRadius || 16 },
     theme.glass && {
       backgroundColor: theme.glass.backgroundColor,
       borderWidth: theme.glass.borderWidth,
@@ -27,10 +29,9 @@ export default function GlassCard({ children, style, onPress }) {
       elevation: theme.glass.elevation,
     },
     isHovered && {
-      backgroundColor: theme.surfaceHover,
-      borderColor: theme.borderGlow,
-      shadowOpacity: theme.glass?.shadowOpacity ? theme.glass.shadowOpacity * 1.5 : 0.45,
-      transform: [{ scale: 1.02 }],
+      // Keep same background on hover (no color flash)
+      shadowOpacity: theme.glass?.shadowOpacity ? theme.glass.shadowOpacity * 1.2 : 0.2,
+      transform: [{ scale: 1.008 }],
     },
     style,
   ];
@@ -56,7 +57,7 @@ export default function GlassCard({ children, style, onPress }) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     transition: 'all 0.3s ease',
   },

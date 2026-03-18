@@ -17,7 +17,7 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('glassmorphism');
+  const [currentTheme, setCurrentTheme] = useState('matteWhite');
   const [customThemes, setCustomThemes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const syncPreferencesRef = useRef(false);

@@ -3,8 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, StatusBar } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 
-export default function Sidebar({ visible, onClose, navigation, isPersistent = false }) {
-  const { theme } = useTheme();
+export default function Sidebar({ visible, onClose, navigation, isPersistent = false, themeOverride }) {
+  const { theme: contextTheme } = useTheme();
+  const theme = themeOverride || contextTheme;
   const { getFontFamily, getFontSizes } = require('../contexts/UISettingsContext').useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -39,8 +40,8 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
   // Desktop persistent sidebar (no modal)
   if (isPersistent) {
     return (
-      <View style={[styles.sidebar, styles.persistentSidebar, { backgroundColor: theme.surface }]}> 
-        <View style={[styles.header, styles.persistentHeader]}>
+      <View style={[styles.sidebar, styles.persistentSidebar, { backgroundColor: theme.surface, borderRightWidth: 1, borderRightColor: theme.border }]}> 
+        <View style={[styles.header, styles.persistentHeader, { borderBottomColor: theme.border }]}>
           <Text style={[styles.title, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
         </View>
 
@@ -91,7 +92,7 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
           ))}
         </View>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: theme.border }]}>
           <Text style={[styles.version, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}>Version 1.0</Text>
         </View>
       </View>
@@ -109,7 +110,7 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
       <View style={styles.overlay}>
         <StatusBar backgroundColor="rgba(0,0,0,0.5)" />
         <View style={[styles.sidebar, { backgroundColor: theme.surface }]}> 
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <Text style={[styles.title, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme.textSecondary} />
@@ -166,7 +167,7 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
             ))}
           </View>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
             <Text style={[styles.version, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}>Version 1.0</Text>
           </View>
         </View>
@@ -194,7 +195,6 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 280,
-    backgroundColor: '#FFFFFF',
     paddingTop: 50
   },
   header: {
@@ -204,12 +204,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ECF0F1'
   },
   title: {
     fontSize: 40,
     fontWeight: '600',
-    color: '#2C3E50'
   },
   closeButton: {
     padding: 4
@@ -224,23 +222,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 0,
-    borderBottomColor: '#F8F9FA'
   },
   menuLabel: {
     flex: 1,
     fontSize: 16,
     marginLeft: 16,
-    color: '#2C3E50'
   },
   footer: {
     padding: 20,
     borderTopWidth: 2,
-    borderTopColor: '#ECF0F1',
     alignItems: 'left'
   },
   version: {
     fontSize: 12,
-    color: '#BDC3C7'
   },
   sectionDivider: {
     marginTop: 20,

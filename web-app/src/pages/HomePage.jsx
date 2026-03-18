@@ -5,11 +5,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { collection, query, where, getDocs, doc, deleteDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Search, Trash2, Edit, Grid, List, SortAsc } from 'lucide-react';
+import { Plus, Search, Trash2, Edit } from 'lucide-react';
 import { sortEntries, countWords } from '../utils/entryUtils';
 
+// SVG noise texture for matte feel on cards
+const noiseTexture = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`;
+
 export default function HomePage() {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   const { user } = useAuth();
   const { settings } = useUISettings();
   const navigate = useNavigate();
@@ -18,6 +21,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
 
+  const isMatte = currentTheme === 'matteBlack' || currentTheme === 'matteWhite';
+
   useEffect(() => {
     loadEntries();
   }, [user]);
@@ -25,7 +30,6 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) return;
 
-    // Set up real-time listener
     const q = query(
       collection(db, 'entries'),
       where('userId', '==', user.uid)
@@ -67,7 +71,6 @@ export default function HomePage() {
       
       setEntries(entriesData);
       
-      // Calculate stats
       const totalWords = entriesData.reduce((sum, entry) => sum + countWords(entry.content), 0);
       setStats({ totalEntries: entriesData.length, totalWords });
     } catch (error) {
@@ -139,15 +142,20 @@ export default function HomePage() {
     newButton: {
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      padding: '12px 24px',
-      borderRadius: '12px',
-      border: 'none',
-      backgroundColor: theme.accent,
-      color: '#fff',
+      gap: isMatte ? '0' : '8px',
+      justifyContent: 'center',
+      padding: isMatte ? '12px' : '12px 24px',
+      borderRadius: isMatte ? '10px' : '12px',
+      border: isMatte ? `1px solid ${theme.border}` : 'none',
+      backgroundColor: isMatte ? (theme.buttonBg || '#181818') : (theme.primary || theme.accent),
+      color: isMatte ? theme.accent : '#fff',
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: isMatte ? 'none' : `0 2px 8px ${theme.editGlow || 'rgba(37, 99, 235, 0.15)'}`,
+      width: isMatte ? '44px' : 'auto',
+      height: isMatte ? '44px' : 'auto',
     },
     searchBar: {
       position: 'relative',
@@ -184,12 +192,13 @@ export default function HomePage() {
     },
     card: {
       padding: '24px',
-      borderRadius: '16px',
+      borderRadius: isMatte ? '14px' : '16px',
       backgroundColor: theme.surface,
+      ...(isMatte ? { backgroundImage: noiseTexture, backgroundSize: '128px 128px' } : {}),
       border: `1px solid ${theme.border}`,
       cursor: 'pointer',
-      transition: 'all 0.2s',
-      boxShadow: `0 0 10px ${theme.border}`,
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: isMatte ? '0 3px 6px rgba(0, 0, 0, 0.4)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
     },
     cardDate: {
       fontSize: '14px',
@@ -214,7 +223,7 @@ export default function HomePage() {
     tag: {
       padding: '4px 12px',
       borderRadius: '6px',
-      backgroundColor: `${theme.accent}20`,
+      backgroundColor: `${theme.accent}${isMatte ? '15' : '20'}`,
       color: theme.accent,
       fontSize: '12px',
       fontWeight: '500',
@@ -229,19 +238,30 @@ export default function HomePage() {
     actionButton: {
       display: 'flex',
       alignItems: 'center',
-      gap: '6px',
-      padding: '6px 12px',
-      borderRadius: '6px',
-      border: `1px solid ${theme.border}`,
-      backgroundColor: 'transparent',
-      color: theme.text,
+      gap: isMatte ? '0' : '6px',
+      justifyContent: 'center',
+      padding: isMatte ? '8px' : '8px 16px',
+      borderRadius: '8px',
+      border: isMatte ? `1px solid ${theme.border}` : 'none',
       fontSize: '13px',
+      fontWeight: '500',
       cursor: 'pointer',
-      transition: 'all 0.2s',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backgroundColor: isMatte ? (theme.buttonBg || '#181818') : undefined,
+      color: '#fff',
+      ...(isMatte ? { width: '36px', height: '36px' } : {}),
+    },
+    editButton: {
+      ...(isMatte 
+        ? { color: theme.edit || theme.accent, boxShadow: 'none' }
+        : { backgroundColor: theme.edit || theme.primary || '#2563EB', boxShadow: `0 2px 8px ${theme.editGlow || 'rgba(37, 99, 235, 0.15)'}` }
+      ),
     },
     deleteButton: {
-      color: theme.danger || '#DC143C',
-      borderColor: theme.danger || '#DC143C',
+      ...(isMatte
+        ? { color: theme.danger, boxShadow: 'none' }
+        : { backgroundColor: theme.danger || '#DC2626', boxShadow: `0 2px 8px ${theme.dangerGlow || 'rgba(220, 38, 38, 0.15)'}` }
+      ),
     },
     empty: {
       textAlign: 'center',
@@ -254,6 +274,20 @@ export default function HomePage() {
     },
   };
 
+  // Hover behavior adapts to theme
+  const cardHoverIn = isMatte
+    ? (e) => { e.currentTarget.style.transform = 'translateY(-1.5px) scale(1.008)'; e.currentTarget.style.boxShadow = '0 5px 10px rgba(0, 0, 0, 0.5)'; }
+    : (e) => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)'; e.currentTarget.style.backgroundColor = theme.surfaceHover || theme.surface; };
+  const cardHoverOut = isMatte
+    ? (e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 3px 6px rgba(0, 0, 0, 0.4)'; }
+    : (e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'; e.currentTarget.style.backgroundColor = theme.surface; };
+  const btnHoverIn = isMatte
+    ? (e) => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.backgroundColor = '#232323'; }
+    : (e) => { e.currentTarget.style.transform = 'scale(1.05)'; };
+  const btnHoverOut = isMatte
+    ? (e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = theme.buttonBg || '#181818'; }
+    : (e) => { e.currentTarget.style.transform = 'scale(1)'; };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -264,9 +298,15 @@ export default function HomePage() {
               {stats.totalEntries} {stats.totalEntries === 1 ? 'entry' : 'entries'} · {stats.totalWords} words
             </p>
           </div>
-          <button style={styles.newButton} onClick={() => navigate('/add')}>
+          <button
+            style={styles.newButton}
+            onClick={() => navigate('/add')}
+            title="New Entry"
+            onMouseEnter={btnHoverIn}
+            onMouseLeave={btnHoverOut}
+          >
             <Plus size={20} />
-            New Entry
+            {!isMatte && <span>New Entry</span>}
           </button>
         </div>
         
@@ -299,14 +339,8 @@ export default function HomePage() {
               <div
                 key={entry.id}
                 style={styles.card}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = `0 0 20px ${theme.border}`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = `0 0 10px ${theme.border}`;
-                }}
+                onMouseEnter={cardHoverIn}
+                onMouseLeave={cardHoverOut}
               >
                 <div onClick={() => navigate(`/entry/${entry.id}`)} style={{ cursor: 'pointer' }}>
                   <div style={styles.cardDate}>
@@ -327,14 +361,17 @@ export default function HomePage() {
                 </div>
                 <div style={styles.cardActions}>
                   <button
-                    style={styles.actionButton}
+                    style={{ ...styles.actionButton, ...styles.editButton }}
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/edit/${entry.id}`);
                     }}
+                    title="Edit"
+                    onMouseEnter={btnHoverIn}
+                    onMouseLeave={btnHoverOut}
                   >
-                    <Edit size={14} />
-                    Edit
+                    <Edit size={isMatte ? 16 : 14} />
+                    {!isMatte && <span>Edit</span>}
                   </button>
                   <button
                     style={{ ...styles.actionButton, ...styles.deleteButton }}
@@ -342,9 +379,12 @@ export default function HomePage() {
                       e.stopPropagation();
                       handleDelete(entry.id, entry);
                     }}
+                    title="Delete"
+                    onMouseEnter={btnHoverIn}
+                    onMouseLeave={btnHoverOut}
                   >
-                    <Trash2 size={14} />
-                    Delete
+                    <Trash2 size={isMatte ? 16 : 14} />
+                    {!isMatte && <span>Delete</span>}
                   </button>
                 </div>
               </div>

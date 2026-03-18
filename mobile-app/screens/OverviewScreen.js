@@ -212,7 +212,7 @@ export default function OverviewScreen({ navigation }) {
 const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA'
+    backgroundColor: theme.background
   },
   header: {
     flexDirection: 'row',
@@ -221,12 +221,7 @@ const createStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingTop: 52,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    backgroundColor: theme.surface,
   },
   backButton: {
     padding: 8
@@ -234,7 +229,7 @@ const createStyles = (theme) => StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2C3E50'
+    color: theme.text
   },
   placeholder: {
     width: 40
@@ -243,20 +238,15 @@ const createStyles = (theme) => StyleSheet.create({
     flex: 1
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     margin: 16,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2C3E50',
+    color: theme.text,
     marginBottom: 16
   },
   timeRangeButtons: {
@@ -268,14 +258,14 @@ const createStyles = (theme) => StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#ECF0F1',
+    borderColor: theme.border,
     borderRadius: 8,
     alignItems: 'center'
   },
   timeRangeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#2C3E50'
+    color: theme.text
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -287,11 +277,11 @@ const createStyles = (theme) => StyleSheet.create({
   summaryNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#3498DB'
+    color: theme.accent
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#7F8C8D',
+    color: theme.textSecondary,
     marginTop: 4
   },
   customDateRange: {
@@ -316,11 +306,6 @@ const createStyles = (theme) => StyleSheet.create({
     margin: 16,
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
   },
   moodChart: {
     gap: 4
@@ -387,13 +372,13 @@ const createStyles = (theme) => StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '500',
-    color: '#7F8C8D',
+    color: theme.textSecondary,
     marginTop: 16,
     marginBottom: 8
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#BDC3C7',
+    color: theme.textLight,
     textAlign: 'center'
   }
 });

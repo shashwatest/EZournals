@@ -7,8 +7,9 @@ import { useUISettings } from '../contexts/UISettingsContext';
 import { getTagColor } from '../../backend/utils/storage';
 import RichTextRenderer from './RichTextRenderer';
 
-export default function EntryCard({ entry, onPress, onDelete }) {
-  const { theme } = useTheme();
+export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
+  const { theme: contextTheme } = useTheme();
+  const theme = themeOverride || contextTheme;
   const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
   
   if (!theme) return null;
@@ -19,7 +20,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
   
   const screenWidth = Dimensions.get('window').width;
   const isGrid = settings.cardLayout === 'grid';
-  const cardWidth = isGrid ? (screenWidth - 48) / 2 : screenWidth - 32; // 48 = margins + padding for grid, 32 for list
+  const cardWidth = isGrid ? (screenWidth - 48) / 2 : screenWidth - 32;
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -40,7 +41,11 @@ export default function EntryCard({ entry, onPress, onDelete }) {
     return eventTime || null;
   };
 
+  // When using matte theme, skip gradients to maintain the matte look
+  const isMatte = themeOverride != null;
+
   const getGradientColors = () => {
+    if (isMatte) return null;
     if (!entry.tags || entry.tags.length === 0) {
       return null;
     }
@@ -101,12 +106,14 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isGrid, c
     marginHorizontal: isGrid ? 8 : 16,
     marginBottom: isGrid ? 12 : 16,
     padding: isGrid ? 16 : spacing.padding,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: theme.cardRadius || 14,
+    ...(theme.cardShadow || {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
+      elevation: 4,
+    }),
     width: isGrid ? cardWidth : undefined,
     minHeight: isGrid ? cardWidth * 0.8 : undefined
   },
@@ -115,12 +122,16 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isGrid, c
     marginHorizontal: isGrid ? 8 : 16,
     marginBottom: isGrid ? 12 : 16,
     padding: isGrid ? 16 : spacing.padding,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: theme.cardRadius || 14,
+    borderWidth: 1,
+    borderColor: theme.border || 'transparent',
+    ...(theme.cardShadow || {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
+      elevation: 4,
+    }),
     width: isGrid ? cardWidth : undefined,
     minHeight: isGrid ? cardWidth * 0.8 : undefined
   },

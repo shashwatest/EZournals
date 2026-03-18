@@ -53,8 +53,8 @@ export default function SettingsScreen({ navigation }) {
 
   if (isLoading || !theme) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' }}>
-        <Text>Loading...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme?.background || '#F0F0F0' }}>
+        <Text style={{ color: theme?.text || '#1A1A1A' }}>Loading...</Text>
       </View>
     );
   }
@@ -98,6 +98,8 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const themeOptions = [
+    { name: 'matteWhite', label: 'Matte White', color: themes.matteWhite?.accent || '#5A6B7A' },
+    { name: 'matteBlack', label: 'Matte Black', color: themes.matteBlack?.accent || '#7C8A97' },
     { name: 'glassmorphism', label: 'Glassmorphism', color: themes.glassmorphism.accent },
     { name: 'classyBW', label: 'Classy Black & White', color: themes.classyBW.background },
     { name: 'oceanTeal', label: 'Ocean Teal', color: themes.oceanTeal.primary }
@@ -254,7 +256,6 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA'
   },
   header: {
     flexDirection: 'row',
@@ -263,12 +264,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingTop: 52,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
   },
   backButton: {
     padding: 8
@@ -276,7 +271,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2C3E50'
   },
   placeholder: {
     width: 40
@@ -285,15 +279,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   section: {
-    backgroundColor: '#FFFFFF',
     margin: 16,
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -304,25 +292,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2C3E50'
   },
   darkModeToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ECF0F1'
   },
   darkModeText: {
     fontSize: 14,
-    color: '#7F8C8D',
     marginLeft: 4
   },
   darkModeTextActive: {
-    color: '#3498DB',
     fontWeight: '500'
   },
   themeGrid: {
@@ -335,11 +318,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ECF0F1'
   },
   selectedTheme: {
-    borderColor: '#3498DB',
-    backgroundColor: '#3498DB10'
   },
   themeColor: {
     width: 24,
@@ -350,7 +330,6 @@ const styles = StyleSheet.create({
   themeLabel: {
     flex: 1,
     fontSize: 16,
-    color: '#2C3E50'
   },
   tagInputContainer: {
     flexDirection: 'row',
@@ -360,7 +339,6 @@ const styles = StyleSheet.create({
   tagInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ECF0F1',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 16,
@@ -368,7 +346,6 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   addTagButton: {
-    backgroundColor: '#3498DB',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -381,7 +358,6 @@ const styles = StyleSheet.create({
   tagsListTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#7F8C8D',
     marginBottom: 8
   },
   tagsContainer: {
@@ -392,7 +368,6 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3498DB20',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -401,7 +376,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 14,
-    color: '#3498DB',
     fontWeight: '500',
     marginRight: 4
   },
@@ -412,12 +386,10 @@ const styles = StyleSheet.create({
   aboutText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#2C3E50',
     marginBottom: 4
   },
   aboutSubtext: {
     fontSize: 14,
-    color: '#7F8C8D',
     textAlign: 'center'
   },
   createThemeOption: {
