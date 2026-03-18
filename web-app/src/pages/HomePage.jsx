@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUISettings } from '../contexts/UISettingsContext';
-import { collection, query, where, getDocs, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Plus, Search, Trash2, Edit, Grid, List, SortAsc } from 'lucide-react';
 import { sortEntries, countWords } from '../utils/entryUtils';
@@ -20,6 +20,34 @@ export default function HomePage() {
 
   useEffect(() => {
     loadEntries();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Set up real-time listener
+    const q = query(
+      collection(db, 'entries'),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const entriesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      setEntries(entriesData);
+      
+      const totalWords = entriesData.reduce((sum, entry) => sum + countWords(entry.content), 0);
+      setStats({ totalEntries: entriesData.length, totalWords });
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        console.error('Entries listener error:', error);
+      }
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const loadEntries = async () => {

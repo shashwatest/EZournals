@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUISettings } from '../contexts/UISettingsContext';
 import PlatformStorage from '../../backend/utils/platformStorage';
 
 const SYNC_SETTINGS_KEY = 'cloud_sync_settings';
@@ -17,7 +18,8 @@ const SYNC_FIELDS = [
 ];
 
 export default function CloudSettingsScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, enableThemeSync } = useTheme();
+  const { syncPreferences, toggleSyncPreferences } = useUISettings();
   const [syncSettings, setSyncSettings] = useState({
     content: true,
     date: true,
@@ -127,6 +129,29 @@ export default function CloudSettingsScreen({ navigation }) {
             <Ionicons name="close-outline" size={20} color={theme.textSecondary} />
             <Text style={[styles.quickButtonText, { color: theme.text }]}>Disable All</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Preferences Sync Toggle */}
+        <View style={[styles.fieldItem, { backgroundColor: theme.surface, borderColor: theme.border, marginBottom: 24 }]}>
+          <View style={styles.fieldLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: theme.background }]}>
+              <Ionicons name="color-palette-outline" size={22} color={theme.accent} />
+            </View>
+            <View style={styles.fieldInfo}>
+              <View style={styles.fieldTitleRow}>
+                <Text style={[styles.fieldLabel, { color: theme.text }]}>Sync Preferences</Text>
+              </View>
+              <Text style={[styles.fieldDescription, { color: theme.textLight }]}>
+                Sync theme, font, layout and other UI settings across all devices in real-time
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={syncPreferences}
+            onValueChange={(val) => { toggleSyncPreferences(val); enableThemeSync(val); }}
+            trackColor={{ false: theme.border, true: theme.accent }}
+            thumbColor={Platform.OS === 'android' ? theme.surface : undefined}
+          />
         </View>
 
         {/* Sync Fields */}

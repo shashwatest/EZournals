@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image } from 'react-native';
+import React, { useState } from 'react';
+import { Image, ActivityIndicator, Alert } from 'react-native';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import RichTextRenderer from '../components/RichTextRenderer';
 import AudioPlayer from '../components/AudioPlayer';
 import { getTagColor, formatDate, countWords } from '../utils/entryUtils';
+import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
+import { summarizeEntry } from '../../backend/utils/geminiService';
 
 export default function ViewEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
@@ -14,6 +16,33 @@ export default function ViewEntryScreen({ route, navigation }) {
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
   const { entry } = route.params;
+  
+  const [summary, setSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+
+  React.useEffect(() => {
+    checkAIStatus();
+  }, []);
+
+  const checkAIStatus = async () => {
+    const enabled = await isAIEnabled();
+    const settings = await getAISettings();
+    setAiEnabled(enabled && settings.features.summarization);
+  };
+
+  const handleSummarize = async () => {
+    setSummarizing(true);
+    try {
+      const summaryText = await summarizeEntry(entry.content);
+      setSummary(summaryText);
+    } catch (error) {
+      console.error('Summarization error:', error);
+      Alert.alert('Summarization Failed', error.message || 'Failed to generate summary');
+    } finally {
+      setSummarizing(false);
+    }
+  };
 
   if (!theme) return null;
 
@@ -58,6 +87,39 @@ export default function ViewEntryScreen({ route, navigation }) {
               <Text style={[styles.statText, { fontFamily, fontSize: fontSizes.base }]}>{readingTime} min read</Text>
             </View>
           </View>
+          
+          {/* AI Summarize Button */}
+          {aiEnabled && (
+            <TouchableOpacity
+              style={[styles.summarizeButton, { backgroundColor: theme.accent, marginTop: 16 }]}
+              onPress={handleSummarize}
+              disabled={summarizing}
+            >
+              {summarizing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="sparkles" size={18} color="#fff" />
+              )}
+              <Text style={[styles.summarizeButtonText, { fontFamily, fontSize: fontSizes.base }]}>
+                {summarizing ? 'Summarizing...' : 'AI Summarize'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {/* Summary Display */}
+          {summary && (
+            <View style={[styles.summaryContainer, { backgroundColor: theme.accent + '15', borderColor: theme.accent + '30', marginTop: 12 }]}>
+              <View style={styles.summaryHeader}>
+                <Ionicons name="sparkles" size={16} color={theme.accent} />
+                <Text style={[styles.summaryTitle, { color: theme.accent, fontFamily, fontSize: fontSizes.base }]}>
+                  AI Summary
+                </Text>
+              </View>
+              <Text style={[styles.summaryText, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>
+                {summary}
+              </Text>
+            </View>
+          )}
         </View>
         
         <View style={styles.contentContainer}>
@@ -236,5 +298,38 @@ const createStyles = (theme) => StyleSheet.create({
   tagText: {
     fontSize: 12,
     fontWeight: '500'
+  },
+  summarizeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  summarizeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryContainer: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  summaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryText: {
+    fontSize: 14,
+    lineHeight: 22,
   }
 });

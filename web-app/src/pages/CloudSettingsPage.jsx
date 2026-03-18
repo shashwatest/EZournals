@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useUISettings } from '../contexts/UISettingsContext';
 import { ArrowLeft, Info, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 const SYNC_SETTINGS_KEY = 'cloud_sync_settings';
@@ -16,7 +17,8 @@ const SYNC_FIELDS = [
 ];
 
 export default function CloudSettingsPage() {
-  const { theme } = useTheme();
+  const { theme, enableThemeSync } = useTheme();
+  const { syncPreferences, toggleSyncPreferences } = useUISettings();
   const navigate = useNavigate();
   const [syncSettings, setSyncSettings] = useState({
     content: true,
@@ -281,6 +283,31 @@ export default function CloudSettingsPage() {
           <XCircle size={20} color={theme.textSecondary} />
           Disable All
         </button>
+      </div>
+
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>PREFERENCES SYNC</div>
+        <div style={styles.fieldItem}>
+          <div style={styles.fieldLeft}>
+            <div style={styles.fieldInfo}>
+              <div style={styles.fieldTitleRow}>
+                <div style={styles.fieldLabel}>Sync Preferences</div>
+              </div>
+              <div style={styles.fieldDescription}>
+                Sync theme, font, layout and other UI settings across all devices in real-time
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              ...styles.toggle,
+              ...(syncPreferences ? styles.toggleActive : {}),
+            }}
+            onClick={() => { toggleSyncPreferences(!syncPreferences); enableThemeSync(!syncPreferences); }}
+          >
+            <div style={{ ...styles.toggleThumb, ...(syncPreferences ? styles.toggleThumbActive : {}) }} />
+          </div>
+        </div>
       </div>
 
       <div style={styles.section}>

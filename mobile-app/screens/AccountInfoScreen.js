@@ -186,6 +186,13 @@ export default function AccountInfoScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
+    // Clear all local storage
+    await PlatformStorage.removeItem('journal_entries');
+    await PlatformStorage.removeItem('user_profile');
+    await PlatformStorage.removeItem('profile_picture');
+    await PlatformStorage.removeItem('recycleBin');
+    await PlatformStorage.removeItem('last_sync_timestamp');
+    
     await signOut(auth);
     navigation.replace('Login');
   };

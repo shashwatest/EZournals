@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Save, Tag, Image as ImageIcon, MapPin, Mic, Clock, X } from 'lucide-react';
+import { ArrowLeft, Save, Tag, Image as ImageIcon, MapPin, Mic, Clock, X, Sparkles, Loader } from 'lucide-react';
 import { uploadImage, uploadAudio } from '../utils/mediaUpload';
 import { getPredefinedTags } from '../utils/entryUtils';
+import { isAIEnabled, getAISettings } from '../utils/aiSettings';
+import { detectMoodTags } from '../utils/geminiService';
 
 export default function AddEntryPage() {
   const { theme } = useTheme();
@@ -26,8 +28,52 @@ export default function AddEntryPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [detectingMood, setDetectingMood] = useState(false);
 
   const predefinedTags = getPredefinedTags();
+
+  useEffect(() => {
+    checkAIStatus();
+  }, []);
+
+  const checkAIStatus = () => {
+    try {
+      const enabled = isAIEnabled();
+      const settings = getAISettings();
+      setAiEnabled(enabled && settings.features.moodDetection);
+    } catch (error) {
+      console.error('Error checking AI status:', error);
+    }
+  };
+
+  const handleDetectMood = async () => {
+    if (!content.trim()) {
+      alert('Please write something before detecting mood');
+      return;
+    }
+
+    setDetectingMood(true);
+    try {
+      const suggestedTags = await detectMoodTags(content);
+      
+      // Add suggested tags that aren't already selected
+      const newTags = [...tags];
+      suggestedTags.forEach(tag => {
+        if (!newTags.includes(tag)) {
+          newTags.push(tag);
+        }
+      });
+      
+      setTags(newTags);
+      alert(`Mood detected! Added tags: ${suggestedTags.join(', ')}`);
+    } catch (error) {
+      console.error('Mood detection error:', error);
+      alert(`Mood Detection Failed: ${error.message}`);
+    } finally {
+      setDetectingMood(false);
+    }
+  };
 
   const handleContentChange = (e) => {
     const text = e.target.value;
@@ -566,6 +612,44 @@ export default function AddEntryPage() {
                 onKeyDown={handleAddTag}
               />
             </div>
+
+            {/* AI Mood Detection Button */}
+            {aiEnabled && (
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 20px',
+                  marginTop: '12px',
+                  marginBottom: '20px',
+                  backgroundColor: theme.accent,
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: detectingMood ? 'not-allowed' : 'pointer',
+                  opacity: detectingMood ? 0.7 : 1,
+                  width: '100%',
+                }}
+                onClick={handleDetectMood}
+                disabled={detectingMood}
+              >
+                {detectingMood ? (
+                  <>
+                    <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    Detecting Mood...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    AI Detect Mood
+                  </>
+                )}
+              </button>
+            )}
 
             <div style={styles.sectionTitle}>
               <Clock size={16} />

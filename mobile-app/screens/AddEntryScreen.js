@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useUISettings } from '../contexts/UISettingsContext';
-import { Image } from 'react-native';
+import { Image, Alert, ActivityIndicator } from 'react-native';
 import { pickImage } from '../utils/media';
 import { getCurrentLocation, formatLocation } from '../utils/location';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { saveEntry } from '../../backend/utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,6 +12,9 @@ import RichTextEditor from '../components/RichTextEditor';
 import AudioPlayer from '../components/AudioPlayer';
 import AudioRecorder from '../components/AudioRecorder';
 import { uploadImage, uploadAudio } from '../../backend/utils/mediaUpload';
+import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
+import { detectMoodTags } from '../../backend/utils/geminiService';
+import { StatusBar } from 'react-native';
 
 
 export default function AddEntryScreen({ navigation }) {
@@ -28,6 +31,46 @@ export default function AddEntryScreen({ navigation }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [location, setLocation] = useState(null);
   const [eventTime, setEventTime] = useState('');
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [detectingMood, setDetectingMood] = useState(false);
+
+  React.useEffect(() => {
+    checkAIStatus();
+  }, []);
+
+  const checkAIStatus = async () => {
+    const enabled = await isAIEnabled();
+    const settings = await getAISettings();
+    setAiEnabled(enabled && settings.features.moodDetection);
+  };
+
+  const handleDetectMood = async () => {
+    if (!content.trim()) {
+      Alert.alert('No Content', 'Please write something before detecting mood');
+      return;
+    }
+
+    setDetectingMood(true);
+    try {
+      const suggestedTags = await detectMoodTags(content);
+      
+      // Add suggested tags that aren't already selected
+      const newTags = [...selectedTags];
+      suggestedTags.forEach(tag => {
+        if (!newTags.includes(tag)) {
+          newTags.push(tag);
+        }
+      });
+      
+      setSelectedTags(newTags);
+      Alert.alert('Mood Detected', `Added tags: ${suggestedTags.join(', ')}`);
+    } catch (error) {
+      console.error('Mood detection error:', error);
+      Alert.alert('Mood Detection Failed', error.message || 'Failed to detect mood');
+    } finally {
+      setDetectingMood(false);
+    }
+  };
 
   // Show a loading fallback if theme is not ready or ThemeContext is loading
   if (isLoading || !theme) {
@@ -131,6 +174,25 @@ export default function AddEntryScreen({ navigation }) {
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
           />
+          
+          {/* AI Mood Detection Button */}
+          {aiEnabled && (
+            <TouchableOpacity
+              style={[styles.moodDetectButton, { backgroundColor: theme.accent, marginTop: 12 }]}
+              onPress={handleDetectMood}
+              disabled={detectingMood}
+            >
+              {detectingMood ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="sparkles" size={18} color="#fff" />
+              )}
+              <Text style={[styles.moodDetectButtonText, { fontFamily, fontSize: fontSizes.base }]}>
+                {detectingMood ? 'Detecting Mood...' : 'AI Detect Mood'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
           <View style={styles.footer}>
             <Text style={[styles.wordCount, { fontFamily, fontSize: fontSizes.base }]}> 
               {wordCount} {wordCount === 1 ? 'word' : 'words'}
@@ -304,5 +366,19 @@ const createStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
     color: theme.text,
     marginBottom: 8
+  },
+  moodDetectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  moodDetectButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   }
 });

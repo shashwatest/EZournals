@@ -19,6 +19,8 @@ import RecycleBinPage from './pages/RecycleBinPage';
 import CustomThemePage from './pages/CustomThemePage';
 import CloudSettingsPage from './pages/CloudSettingsPage';
 import UISettingsPage from './pages/UISettingsPage';
+import AISettingsPage from './pages/AISettingsPage';
+import InsightsPage from './pages/InsightsPage';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -64,6 +66,8 @@ function App() {
                 <Route path="custom-theme" element={<CustomThemePage />} />
                 <Route path="cloud-settings" element={<CloudSettingsPage />} />
                 <Route path="ui-settings" element={<UISettingsPage />} />
+                <Route path="ai-settings" element={<AISettingsPage />} />
+                <Route path="insights" element={<InsightsPage />} />
               </Route>
             </Routes>
           </UISettingsProvider>

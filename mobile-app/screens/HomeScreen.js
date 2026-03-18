@@ -37,6 +37,17 @@ export default function HomeScreen({ navigation }) {
   }, [navigation]);
 
   useEffect(() => {
+    // Set up real-time sync listener
+    const { subscribeToCloudChanges } = require('../../backend/firebase/cloudStorage');
+    const unsubscribe = subscribeToCloudChanges((changes) => {
+      // Reload data when cloud changes detected
+      loadData();
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (entries.length > 0) {
       const sortedEntries = sortEntries(entries, settings.sortBy);
       setFilteredEntries(sortedEntries);
@@ -45,6 +56,11 @@ export default function HomeScreen({ navigation }) {
 
   const loadData = async () => {
     try {
+      // Sync from cloud first (downloads latest entries)
+      const { syncCloudToLocal } = require('../../backend/firebase/cloudStorage');
+      await syncCloudToLocal().catch(err => console.log('Cloud sync skipped:', err.message));
+      
+      // Then load from local storage (now includes cloud data)
       const data = await getEntries();
       const sortedData = sortEntries(data, settings.sortBy);
       setEntries(sortedData);

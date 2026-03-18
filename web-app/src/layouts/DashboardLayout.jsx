@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen, Trash2 } from 'lucide-react';
+import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen, Trash2, Sparkles, TrendingUp } from 'lucide-react';
 
 export default function DashboardLayout() {
   const { theme } = useTheme();
@@ -13,6 +13,10 @@ export default function DashboardLayout() {
   const location = useLocation();
 
   const handleLogout = async () => {
+    // Clear localStorage
+    localStorage.removeItem('uiSettings');
+    localStorage.removeItem('customThemes');
+    
     await signOut(auth);
     navigate('/login');
   };
@@ -23,6 +27,14 @@ export default function DashboardLayout() {
     { icon: BarChart3, label: 'Overview', path: '/overview' },
     { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin' },
     { icon: User, label: 'Profile', path: '/profile' },
+  ];
+
+  const aiItems = [
+    { icon: Sparkles, label: 'AI Settings', path: '/ai-settings' },
+    { icon: TrendingUp, label: 'Insights', path: '/insights' },
+  ];
+
+  const settingsItems = [
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
@@ -110,6 +122,20 @@ export default function DashboardLayout() {
       flex: 1,
       overflow: 'auto',
     },
+    sectionDivider: {
+      marginTop: '24px',
+      marginBottom: '8px',
+      paddingTop: '16px',
+      borderTop: `1px solid ${theme.border}`,
+    },
+    sectionTitle: {
+      fontSize: '11px',
+      fontWeight: '600',
+      letterSpacing: '0.5px',
+      color: theme.textSecondary,
+      padding: '0 12px',
+      marginBottom: '8px',
+    },
   };
 
   return (
@@ -122,6 +148,51 @@ export default function DashboardLayout() {
 
         <div style={styles.menu}>
           {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <div
+                key={item.path}
+                style={{
+                  ...styles.menuItem,
+                  ...(isActive ? styles.menuItemActive : {}),
+                }}
+                onClick={() => navigate(item.path)}
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </div>
+            );
+          })}
+          
+          <div style={styles.sectionDivider}>
+            <div style={styles.sectionTitle}>AI INTEGRATION</div>
+          </div>
+          
+          {aiItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <div
+                key={item.path}
+                style={{
+                  ...styles.menuItem,
+                  ...(isActive ? styles.menuItemActive : {}),
+                  color: isActive ? theme.accent : theme.accent,
+                }}
+                onClick={() => navigate(item.path)}
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </div>
+            );
+          })}
+          
+          <div style={styles.sectionDivider}>
+            <div style={styles.sectionTitle}>SYSTEM</div>
+          </div>
+          
+          {settingsItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (

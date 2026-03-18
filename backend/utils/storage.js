@@ -23,12 +23,16 @@ const STORAGE_KEY = 'journal_entries';
 
 export const saveEntry = async (entry) => {
   try {
+    const { auth } = require('../firebase/config');
+    const user = auth.currentUser;
+    
     const entries = await getEntries();
     const newEntry = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       tags: entry.tags || [],
       eventTime: entry.eventTime || null,
+      userId: user?.uid || 'local',
       syncedToCloud: false,
       ...entry
     };
@@ -129,8 +133,18 @@ export const getTodayEntries = async () => {
 
 export const getEntries = async () => {
   try {
+    const { auth } = require('../firebase/config');
+    const user = auth.currentUser;
+    
     const entries = await PlatformStorage.getItem(STORAGE_KEY);
-    return entries ? JSON.parse(entries) : [];
+    const allEntries = entries ? JSON.parse(entries) : [];
+    
+    // Filter by current user if logged in
+    if (user) {
+      return allEntries.filter(entry => entry.userId === user.uid);
+    }
+    
+    return allEntries;
   } catch (error) {
     console.error('Error getting entries:', error);
     return [];

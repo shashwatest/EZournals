@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { savePreferencesToCloud, getPreferencesFromCloud, subscribeToPreferences } from '../utils/preferencesService';
 
 const defaultThemes = {
   glassmorphism: {
@@ -55,31 +56,73 @@ export function ThemeProvider({ children }) {
   const [currentTheme, setCurrentTheme] = useState('glassmorphism');
   const [customThemes, setCustomThemes] = useState([]);
   const [allThemes, setAllThemes] = useState(defaultThemes);
+  const syncRef = useRef(false);
+  const unsubscribeRef = useRef(null);
+
+  const enableThemeSync = (enabled) => {
+    syncRef.current = enabled;
+    if (unsubscribeRef.current) { unsubscribeRef.current(); unsubscribeRef.current = null; }
+    if (enabled) {
+      unsubscribeRef.current = subscribeToPreferences((prefs) => {
+        if (prefs.currentTheme && allThemes[prefs.currentTheme]) {
+          setCurrentTheme(prefs.currentTheme);
+          localStorage.setItem('theme', prefs.currentTheme);
+        }
+        if (prefs.customThemes) {
+          setCustomThemes(prefs.customThemes);
+          localStorage.setItem('customThemes', JSON.stringify(prefs.customThemes));
+          const merged = { ...defaultThemes };
+          prefs.customThemes.forEach(t => { merged[t.id] = t; });
+          setAllThemes(merged);
+        }
+      });
+    }
+  };
 
   useEffect(() => {
-    // Load saved theme
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      setCurrentTheme(saved);
-    }
+    return () => { if (unsubscribeRef.current) unsubscribeRef.current(); };
+  }, []);
 
-    // Load custom themes
-    const savedCustomThemes = localStorage.getItem('customThemes');
-    if (savedCustomThemes) {
-      try {
-        const parsed = JSON.parse(savedCustomThemes);
-        setCustomThemes(parsed);
-        
-        // Merge custom themes with default themes
-        const merged = { ...defaultThemes };
-        parsed.forEach(theme => {
-          merged[theme.id] = theme;
-        });
-        setAllThemes(merged);
-      } catch (e) {
-        console.error('Error loading custom themes:', e);
+  useEffect(() => {
+    const init = async () => {
+      // Load saved theme
+      const saved = localStorage.getItem('theme');
+      if (saved) setCurrentTheme(saved);
+
+      // Load custom themes
+      const savedCustomThemes = localStorage.getItem('customThemes');
+      let parsed = [];
+      if (savedCustomThemes) {
+        try {
+          parsed = JSON.parse(savedCustomThemes);
+          setCustomThemes(parsed);
+          const merged = { ...defaultThemes };
+          parsed.forEach(theme => { merged[theme.id] = theme; });
+          setAllThemes(merged);
+        } catch (e) {
+          console.error('Error loading custom themes:', e);
+        }
       }
-    }
+
+      // If sync was enabled, fetch latest from cloud
+      const savedSync = localStorage.getItem('syncPreferences');
+      if (savedSync && JSON.parse(savedSync)) {
+        const prefs = await getPreferencesFromCloud();
+        if (prefs?.customThemes) {
+          setCustomThemes(prefs.customThemes);
+          localStorage.setItem('customThemes', JSON.stringify(prefs.customThemes));
+          const merged = { ...defaultThemes };
+          prefs.customThemes.forEach(t => { merged[t.id] = t; });
+          setAllThemes(merged);
+          parsed = prefs.customThemes;
+        }
+        if (prefs?.currentTheme) {
+          setCurrentTheme(prefs.currentTheme);
+          localStorage.setItem('theme', prefs.currentTheme);
+        }
+      }
+    };
+    init();
   }, []);
 
   const theme = allThemes[currentTheme] || defaultThemes.glassmorphism;
@@ -88,73 +131,48 @@ export function ThemeProvider({ children }) {
     if (allThemes[themeName]) {
       setCurrentTheme(themeName);
       localStorage.setItem('theme', themeName);
+      if (syncRef.current) savePreferencesToCloud({ currentTheme: themeName });
     }
   };
 
   const saveCustomTheme = (themeData) => {
-    const newTheme = {
-      ...themeData,
-      id: themeData.id || `custom_${Date.now()}`,
-    };
-
+    const newTheme = { ...themeData, id: themeData.id || `custom_${Date.now()}` };
     const updated = [...customThemes, newTheme];
     setCustomThemes(updated);
     localStorage.setItem('customThemes', JSON.stringify(updated));
-
-    // Update all themes
     const merged = { ...defaultThemes };
-    updated.forEach(theme => {
-      merged[theme.id] = theme;
-    });
+    updated.forEach(t => { merged[t.id] = t; });
     setAllThemes(merged);
-
+    if (syncRef.current) savePreferencesToCloud({ customThemes: updated });
     return newTheme.id;
   };
 
   const updateCustomTheme = (themeId, themeData) => {
-    const updated = customThemes.map(t => 
-      t.id === themeId ? { ...themeData, id: themeId } : t
-    );
+    const updated = customThemes.map(t => t.id === themeId ? { ...themeData, id: themeId } : t);
     setCustomThemes(updated);
     localStorage.setItem('customThemes', JSON.stringify(updated));
-
-    // Update all themes
     const merged = { ...defaultThemes };
-    updated.forEach(theme => {
-      merged[theme.id] = theme;
-    });
+    updated.forEach(t => { merged[t.id] = t; });
     setAllThemes(merged);
+    if (syncRef.current) savePreferencesToCloud({ customThemes: updated });
   };
 
   const deleteCustomTheme = (themeId) => {
     const updated = customThemes.filter(t => t.id !== themeId);
     setCustomThemes(updated);
     localStorage.setItem('customThemes', JSON.stringify(updated));
-
-    // Update all themes
     const merged = { ...defaultThemes };
-    updated.forEach(theme => {
-      merged[theme.id] = theme;
-    });
+    updated.forEach(t => { merged[t.id] = t; });
     setAllThemes(merged);
-
-    // If deleted theme was active, switch to default
-    if (currentTheme === themeId) {
-      changeTheme('glassmorphism');
-    }
+    if (currentTheme === themeId) changeTheme('glassmorphism');
+    if (syncRef.current) savePreferencesToCloud({ customThemes: updated });
   };
 
   return (
     <ThemeContext.Provider value={{ 
-      theme, 
-      currentTheme, 
-      changeTheme, 
-      customThemes,
-      allThemes,
-      defaultThemes,
-      saveCustomTheme,
-      updateCustomTheme,
-      deleteCustomTheme
+      theme, currentTheme, changeTheme, customThemes,
+      allThemes, defaultThemes, saveCustomTheme,
+      updateCustomTheme, deleteCustomTheme, enableThemeSync,
     }}>
       {children}
     </ThemeContext.Provider>

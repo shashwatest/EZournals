@@ -16,7 +16,15 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
     { icon: 'calendar-outline', label: 'Navigate', screen: 'Navigate' },
     { icon: 'analytics-outline', label: 'Overview', screen: 'Overview' },
     { icon: 'trash-outline', label: 'Recycle Bin', screen: 'RecycleBin' },
-    { icon: 'settings-outline', label: 'Settings', screen: 'Settings' }
+  ];
+
+  const aiItems = [
+    { icon: 'sparkles-outline', label: 'AI Settings', screen: 'AISettings' },
+    { icon: 'analytics-outline', label: 'Insights', screen: 'Insights' },
+  ];
+
+  const settingsItems = [
+    { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
   ];
 
   const handleNavigation = (screen) => {
@@ -40,6 +48,40 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
+              style={styles.menuItem}
+              onPress={() => handleNavigation(item.screen)}
+            >
+              <Ionicons name={item.icon} size={22} color={theme.text} />
+              <Text style={[styles.menuLabel, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+          
+          <View style={[styles.sectionDivider, { borderTopColor: theme.border }]}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}>
+              AI INTEGRATION
+            </Text>
+          </View>
+          
+          {aiItems.map((item, index) => (
+            <TouchableOpacity
+              key={`ai-${index}`}
+              style={styles.menuItem}
+              onPress={() => handleNavigation(item.screen)}
+            >
+              <Ionicons name={item.icon} size={22} color={theme.accent} />
+              <Text style={[styles.menuLabel, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+          
+          <View style={[styles.sectionDivider, { borderTopColor: theme.border }]}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}>
+              SYSTEM
+            </Text>
+          </View>
+          
+          {settingsItems.map((item, index) => (
+            <TouchableOpacity
+              key={`settings-${index}`}
               style={styles.menuItem}
               onPress={() => handleNavigation(item.screen)}
             >
@@ -78,6 +120,42 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
             {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={index}
+                style={styles.menuItem}
+                onPress={() => handleNavigation(item.screen)}
+              >
+                <Ionicons name={item.icon} size={22} color={theme.text} />
+                <Text style={[styles.menuLabel, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={theme.textLight} />
+              </TouchableOpacity>
+            ))}
+            
+            <View style={[styles.sectionDivider, { borderTopColor: theme.border }]}>
+              <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}>
+                AI INTEGRATION
+              </Text>
+            </View>
+            
+            {aiItems.map((item, index) => (
+              <TouchableOpacity
+                key={`ai-${index}`}
+                style={styles.menuItem}
+                onPress={() => handleNavigation(item.screen)}
+              >
+                <Ionicons name={item.icon} size={22} color={theme.accent} />
+                <Text style={[styles.menuLabel, { color: theme.text, fontFamily, fontSize: fontSizes.base }]}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={theme.textLight} />
+              </TouchableOpacity>
+            ))}
+            
+            <View style={[styles.sectionDivider, { borderTopColor: theme.border }]}>
+              <Text style={[styles.sectionTitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}>
+                SYSTEM
+              </Text>
+            </View>
+            
+            {settingsItems.map((item, index) => (
+              <TouchableOpacity
+                key={`settings-${index}`}
                 style={styles.menuItem}
                 onPress={() => handleNavigation(item.screen)}
               >
@@ -163,5 +241,18 @@ const styles = StyleSheet.create({
   version: {
     fontSize: 12,
     color: '#BDC3C7'
+  },
+  sectionDivider: {
+    marginTop: 20,
+    marginBottom: 12,
+    paddingTop: 20,
+    borderTopWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    paddingHorizontal: 20,
+    marginBottom: 8,
   }
 });

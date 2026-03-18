@@ -19,6 +19,8 @@ import CustomThemeScreen from './screens/CustomThemeScreen';
 import NavigateScreen from './screens/NavigateScreen';
 import OverviewScreen from './screens/OverviewScreen';
 import CloudSettingsScreen from './screens/CloudSettingsScreen';
+import AISettingsScreen from './screens/AISettingsScreen';
+import InsightsScreen from './screens/InsightsScreen';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Constants from 'expo-constants';
 
@@ -89,6 +91,8 @@ function AppNavigator() {
         <Stack.Screen name="UISettings" component={UISettingsScreen} />
         <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
         <Stack.Screen name="CloudSettings" component={CloudSettingsScreen} />
+        <Stack.Screen name="AISettings" component={AISettingsScreen} />
+        <Stack.Screen name="Insights" component={InsightsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -102,7 +106,6 @@ export default function App() {
     
     GoogleSignin.configure({
       webClientId: webId,
-      androidClientId: androidId,
     });
   }, []);
 

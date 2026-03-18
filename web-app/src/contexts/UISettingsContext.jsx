@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { savePreferencesToCloud, getPreferencesFromCloud, subscribeToPreferences } from '../utils/preferencesService';
 
 const UISettingsContext = createContext({});
 
@@ -16,23 +17,55 @@ const defaultSettings = {
 
 export function UISettingsProvider({ children }) {
   const [settings, setSettings] = useState(defaultSettings);
+  const [syncPreferences, setSyncPreferences] = useState(false);
+  const unsubscribeRef = useRef(null);
 
   useEffect(() => {
-    // Load settings from localStorage
-    const saved = localStorage.getItem('uiSettings');
-    if (saved) {
-      try {
-        setSettings(JSON.parse(saved));
-      } catch (e) {
-        console.error('Error loading UI settings:', e);
+    const init = async () => {
+      const saved = localStorage.getItem('uiSettings');
+      const savedSync = localStorage.getItem('syncPreferences');
+      if (saved) { try { setSettings(JSON.parse(saved)); } catch (e) {} }
+      const syncEnabled = savedSync ? JSON.parse(savedSync) : false;
+      setSyncPreferences(syncEnabled);
+
+      // If sync was enabled, fetch latest from cloud on load
+      if (syncEnabled) {
+        const prefs = await getPreferencesFromCloud();
+        if (prefs?.uiSettings) {
+          const base = saved ? JSON.parse(saved) : {};
+          const merged = { ...defaultSettings, ...base, ...prefs.uiSettings };
+          setSettings(merged);
+          localStorage.setItem('uiSettings', JSON.stringify(merged));
+        }
       }
-    }
+    };
+    init();
+    return () => { if (unsubscribeRef.current) unsubscribeRef.current(); };
   }, []);
+
+  useEffect(() => {
+    if (unsubscribeRef.current) { unsubscribeRef.current(); unsubscribeRef.current = null; }
+    if (syncPreferences) {
+      unsubscribeRef.current = subscribeToPreferences((prefs) => {
+        if (prefs.uiSettings) {
+          setSettings(s => ({ ...s, ...prefs.uiSettings }));
+          localStorage.setItem('uiSettings', JSON.stringify({ ...settings, ...prefs.uiSettings }));
+        }
+      });
+    }
+  }, [syncPreferences]);
 
   const updateSetting = (key, value) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     localStorage.setItem('uiSettings', JSON.stringify(newSettings));
+    if (syncPreferences) savePreferencesToCloud({ uiSettings: newSettings });
+  };
+
+  const toggleSyncPreferences = (value) => {
+    setSyncPreferences(value);
+    localStorage.setItem('syncPreferences', JSON.stringify(value));
+    if (value) savePreferencesToCloud({ uiSettings: settings });
   };
 
   const getFontSizes = () => {
@@ -67,15 +100,10 @@ export function UISettingsProvider({ children }) {
   };
 
   return (
-    <UISettingsContext.Provider
-      value={{
-        settings,
-        updateSetting,
-        getFontSizes,
-        getFontFamily,
-        getSpacing,
-      }}
-    >
+    <UISettingsContext.Provider value={{
+      settings, updateSetting, getFontSizes, getFontFamily, getSpacing,
+      syncPreferences, toggleSyncPreferences,
+    }}>
       {children}
     </UISettingsContext.Provider>
   );

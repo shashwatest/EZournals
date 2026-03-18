@@ -4,8 +4,55 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Edit, FileText, Clock, Mic, MapPin } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, Clock, Mic, MapPin, Sparkles, Loader } from 'lucide-react';
 import { getTagColor, formatDate, countWords } from '../utils/entryUtils';
+
+const AI_SETTINGS_KEY = 'ai_settings';
+
+// Gemini API function
+const summarizeEntryWithGemini = async (content, apiKey, model) => {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  
+  const prompt = `You are a helpful assistant that summarizes journal entries. 
+
+Please provide a brief, concise summary (2-3 sentences) of the following journal entry. Focus on the main themes, emotions, and key events mentioned.
+
+Journal Entry:
+${content}
+
+Summary:`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.5,
+        maxOutputTokens: 200,
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error('No response generated from Gemini');
+  }
+
+  return data.candidates[0].content.parts[0].text.trim();
+};
 
 export default function ViewEntryPage() {
   const { theme } = useTheme();
@@ -14,10 +61,51 @@ export default function ViewEntryPage() {
   const navigate = useNavigate();
   const [entry, setEntry] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
 
   useEffect(() => {
     loadEntry();
+    checkAIStatus();
   }, [id, user]);
+
+  const checkAIStatus = () => {
+    try {
+      const saved = localStorage.getItem(AI_SETTINGS_KEY);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        setAiEnabled(settings.enabled && settings.apiKey && settings.features.summarization);
+      }
+    } catch (error) {
+      console.error('Error checking AI status:', error);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!entry) return;
+    
+    setSummarizing(true);
+    try {
+      const saved = localStorage.getItem(AI_SETTINGS_KEY);
+      if (!saved) {
+        throw new Error('AI settings not found');
+      }
+      
+      const settings = JSON.parse(saved);
+      if (!settings.enabled || !settings.apiKey) {
+        throw new Error('AI features are disabled or API key not configured');
+      }
+
+      const summaryText = await summarizeEntryWithGemini(entry.content, settings.apiKey, settings.model);
+      setSummary(summaryText);
+    } catch (error) {
+      console.error('Summarization error:', error);
+      alert(`Summarization Failed: ${error.message}`);
+    } finally {
+      setSummarizing(false);
+    }
+  };
 
   const loadEntry = async () => {
     if (!user || !id) return;
@@ -140,6 +228,45 @@ export default function ViewEntryPage() {
       color: theme.textSecondary,
       fontSize: '14px',
     },
+    summarizeButton: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      padding: '12px 20px',
+      marginTop: '16px',
+      backgroundColor: theme.accent,
+      color: '#fff',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      width: '100%',
+    },
+    summaryContainer: {
+      marginTop: '16px',
+      padding: '16px',
+      backgroundColor: `${theme.accent}15`,
+      border: `1px solid ${theme.accent}30`,
+      borderRadius: '12px',
+    },
+    summaryHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      marginBottom: '8px',
+    },
+    summaryTitle: {
+      fontSize: '14px',
+      fontWeight: '600',
+      color: theme.accent,
+    },
+    summaryText: {
+      fontSize: '14px',
+      color: theme.text,
+      lineHeight: '1.6',
+    },
     contentCard: {
       backgroundColor: theme.surface,
       borderRadius: '12px',
@@ -208,6 +335,42 @@ export default function ViewEntryPage() {
                 <span>{readingTime} min read</span>
               </div>
             </div>
+            
+            {/* AI Summarize Button */}
+            {aiEnabled && (
+              <button
+                style={{
+                  ...styles.summarizeButton,
+                  cursor: summarizing ? 'not-allowed' : 'pointer',
+                  opacity: summarizing ? 0.7 : 1,
+                }}
+                onClick={handleSummarize}
+                disabled={summarizing}
+              >
+                {summarizing ? (
+                  <>
+                    <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    Summarizing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    AI Summarize
+                  </>
+                )}
+              </button>
+            )}
+            
+            {/* Summary Display */}
+            {summary && (
+              <div style={styles.summaryContainer}>
+                <div style={styles.summaryHeader}>
+                  <Sparkles size={16} color={theme.accent} />
+                  <div style={styles.summaryTitle}>AI Summary</div>
+                </div>
+                <div style={styles.summaryText}>{summary}</div>
+              </div>
+            )}
           </div>
 
           <div style={styles.contentCard}>
