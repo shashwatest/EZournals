@@ -187,7 +187,7 @@ export default function ViewEntryPage() {
       gap: '8px',
       padding: '8px 16px',
       borderRadius: '8px',
-      border: `1px solid ${theme.accent}`,
+      border: theme.is3D ? 'none' : `1px solid ${theme.accent}`,
       backgroundColor: 'transparent',
       color: theme.accent,
       cursor: 'pointer',
@@ -315,9 +315,9 @@ export default function ViewEntryPage() {
           </button>
           <span style={styles.headerTitle}>Entry Details</span>
         </div>
-        <button style={styles.editButton} onClick={() => navigate(`/edit/${entry.id}`)}>
+        <button className={theme.is3D ? 'light3d-icon-button' : 'regular-icon-button-edit'} style={styles.editButton} onClick={() => navigate(`/edit/${entry.id}`)}>
           <Edit size={16} />
-          Edit
+          <span style={theme.is3D ? { display: 'none' } : {}}>Edit</span>
         </button>
       </div>
 

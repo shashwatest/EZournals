@@ -6,6 +6,7 @@ import { UISettingsProvider } from './contexts/UISettingsContext';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import './theme.css';
 import DashboardLayout from './layouts/DashboardLayout';
 import HomePage from './pages/HomePage';
 import AddEntryPage from './pages/AddEntryPage';

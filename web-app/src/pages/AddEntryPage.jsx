@@ -290,14 +290,16 @@ export default function AddEntryPage() {
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
-      padding: '12px 24px',
+      padding: theme.is3D ? '12px 16px' : '12px 24px',
       borderRadius: '12px',
       border: 'none',
-      backgroundColor: content.trim() ? theme.accent : theme.border,
-      color: '#fff',
+      backgroundColor: theme.is3D ? 'transparent' : (content.trim() ? theme.accent : theme.border),
+      color: theme.is3D ? (content.trim() ? theme.accent : theme.textLight) : '#fff',
       fontSize: '16px',
       fontWeight: '600',
       cursor: content.trim() ? 'pointer' : 'not-allowed',
+      transition: 'all 0.3s ease',
+      boxShadow: theme.is3D ? 'none' : undefined,
     },
     content: {
       flex: 1,
@@ -507,12 +509,13 @@ export default function AddEntryPage() {
           <h1 style={styles.title}>New Entry</h1>
         </div>
         <button 
+          className={theme.is3D ? 'light3d-main-button' : 'regular-main-button'}
           style={styles.saveButton} 
           onClick={handleSave} 
           disabled={!content.trim() || saving}
         >
           <Save size={20} />
-          {saving ? 'Saving...' : 'Save Entry'}
+          <span style={theme.is3D ? { display: 'none' } : {}}>{saving ? 'Saving...' : 'Save Entry'}</span>
         </button>
       </div>
 

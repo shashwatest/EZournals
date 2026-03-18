@@ -30,6 +30,23 @@ const defaultThemes = {
     danger: '#EF4444',
     success: '#10B981',
   },
+  light3d: {
+    id: 'light3d',
+    name: 'Light 3D',
+    background: '#FAFAFA',
+    surface: '#FFFFFF',
+    surfaceHover: '#F0F0F0',
+    text: '#1A1A1A',
+    textSecondary: '#666666',
+    textLight: '#999999',
+    accent: '#6366F1',
+    primary: '#6366F1',
+    border: '#E5E5E5',
+    borderGlow: '#D1D5DB',
+    danger: '#EF4444',
+    success: '#10B981',
+    is3D: true, // Custom flag to trigger 3D effects
+  },
   dark: {
     id: 'dark',
     name: 'Dark',

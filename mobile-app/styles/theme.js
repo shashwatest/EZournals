@@ -95,9 +95,67 @@ export const classyBWTheme = {
   }
 };
 
+export const light3DTheme = {
+  background: '#FAFAFA', // Matte white finish
+  surface: '#FFFFFF', // Clean solid white for cards
+  surfaceHover: '#F0F0F0', // Slight hover tint
+  text: '#1A1A1A',
+  textSecondary: '#666666',
+  textLight: '#999999',
+  accent: '#6366F1',
+  primary: '#6366F1',
+  danger: '#EF4444',
+  border: '#E5E5E5',
+  borderSolid: '#E5E5E5',
+  borderGlow: '#D1D5DB', // Soft shadow color
+  success: '#10B981',
+  warning: '#F59E0B',
+  heading: '#1A1A1A',
+  headingSize: 32,
+  subheadingSize: 22,
+  fontFamily: 'System',
+  cardRadius: 16,
+  is3D: true,
+  // Card with soft 3D shadow
+  glass: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  glossyButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  buttonHover: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E5E5',
+    shadowOpacity: 0.15,
+    transform: [{ scale: 1.05 }],
+  },
+  cardShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  }
+};
+
 export const themes = {
   glassmorphism: glassmorphismTheme, // Set as first/default
   classyBW: classyBWTheme,
+  light3d: light3DTheme,
   oceanTeal: {
     background: '#E0F2F1',
     surface: '#FFFFFF',

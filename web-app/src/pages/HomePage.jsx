@@ -140,14 +140,16 @@ export default function HomePage() {
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
-      padding: '12px 24px',
+      padding: theme.is3D ? '12px 16px' : '12px 24px',
       borderRadius: '12px',
       border: 'none',
-      backgroundColor: theme.accent,
-      color: '#fff',
+      backgroundColor: theme.is3D ? 'transparent' : theme.accent,
+      color: theme.is3D ? theme.accent : '#fff',
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: theme.is3D ? 'none' : undefined,
     },
     searchBar: {
       position: 'relative',
@@ -186,10 +188,10 @@ export default function HomePage() {
       padding: '24px',
       borderRadius: '16px',
       backgroundColor: theme.surface,
-      border: `1px solid ${theme.border}`,
+      border: theme.is3D ? 'none' : `1px solid ${theme.border}`,
       cursor: 'pointer',
-      transition: 'all 0.2s',
-      boxShadow: `0 0 10px ${theme.border}`,
+      transition: 'all 0.3s ease',
+      boxShadow: theme.is3D ? `0 4px 12px ${theme.borderGlow || 'rgba(0,0,0,0.1)'}` : `0 0 10px ${theme.border}`,
     },
     cardDate: {
       fontSize: '14px',
@@ -232,16 +234,16 @@ export default function HomePage() {
       gap: '6px',
       padding: '6px 12px',
       borderRadius: '6px',
-      border: `1px solid ${theme.border}`,
+      border: theme.is3D ? 'none' : `1px solid ${theme.border}`,
       backgroundColor: 'transparent',
       color: theme.text,
       fontSize: '13px',
       cursor: 'pointer',
-      transition: 'all 0.2s',
+      transition: 'all 0.3s ease',
     },
     deleteButton: {
       color: theme.danger || '#DC143C',
-      borderColor: theme.danger || '#DC143C',
+      borderColor: theme.is3D ? 'transparent' : (theme.danger || '#DC143C'),
     },
     empty: {
       textAlign: 'center',
@@ -264,9 +266,13 @@ export default function HomePage() {
               {stats.totalEntries} {stats.totalEntries === 1 ? 'entry' : 'entries'} · {stats.totalWords} words
             </p>
           </div>
-          <button style={styles.newButton} onClick={() => navigate('/add')}>
+          <button
+            className={theme.is3D ? 'light3d-main-button' : 'regular-main-button'}
+            style={styles.newButton}
+            onClick={() => navigate('/add')}
+          >
             <Plus size={20} />
-            New Entry
+            <span style={theme.is3D ? { display: 'none' } : {}}>New Entry</span>
           </button>
         </div>
         
@@ -298,15 +304,12 @@ export default function HomePage() {
             {filteredAndSortedEntries.map((entry) => (
               <div
                 key={entry.id}
-                style={styles.card}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = `0 0 20px ${theme.border}`;
+                style={{
+                  ...styles.card,
+                  '--hover-shadow-color': theme.border,
+                  '--theme-surface-hover': theme.surfaceHover,
                 }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = `0 0 10px ${theme.border}`;
-                }}
+                className={theme.is3D ? 'light3d-card-hover' : 'regular-card-hover'}
               >
                 <div onClick={() => navigate(`/entry/${entry.id}`)} style={{ cursor: 'pointer' }}>
                   <div style={styles.cardDate}>
@@ -327,24 +330,33 @@ export default function HomePage() {
                 </div>
                 <div style={styles.cardActions}>
                   <button
-                    style={styles.actionButton}
+                    className={theme.is3D ? 'light3d-icon-button' : 'regular-icon-button-edit'}
+                    style={{
+                      ...styles.actionButton,
+                      '--hover-bg-color': `${theme.accent}10`,
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/edit/${entry.id}`);
                     }}
                   >
                     <Edit size={14} />
-                    Edit
+                    <span style={theme.is3D ? { display: 'none' } : {}}>Edit</span>
                   </button>
                   <button
-                    style={{ ...styles.actionButton, ...styles.deleteButton }}
+                    className={theme.is3D ? 'light3d-icon-button' : 'regular-icon-button-delete'}
+                    style={{
+                      ...styles.actionButton,
+                      ...styles.deleteButton,
+                      '--hover-danger-color': `${theme.danger}10`,
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(entry.id, entry);
                     }}
                   >
                     <Trash2 size={14} />
-                    Delete
+                    <span style={theme.is3D ? { display: 'none' } : {}}>Delete</span>
                   </button>
                 </div>
               </div>

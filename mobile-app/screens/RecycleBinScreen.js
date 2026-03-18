@@ -6,6 +6,7 @@ import { getRecycleBin, saveToRecycleBin } from '../../backend/utils/storage';
 import { formatDate } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import RichTextRenderer from '../components/RichTextRenderer';
+import GlassButton from '../components/GlassButton';
 
 export default function RecycleBinScreen({ navigation }) {
   const { theme } = useTheme();
@@ -55,12 +56,20 @@ export default function RecycleBinScreen({ navigation }) {
       <View style={styles.entryHeader}>
         <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
         <View style={styles.entryActions}>
-          <TouchableOpacity onPress={() => restoreEntry(item)} style={styles.actionButton}>
-            <Ionicons name="refresh" size={18} color={theme.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => permanentDelete(item.id)} style={styles.actionButton}>
-            <Ionicons name="trash" size={18} color={theme.danger} />
-          </TouchableOpacity>
+          <View style={styles.actionButton}>
+            <GlassButton
+              isIconButton={true}
+              icon={<Ionicons name="refresh" size={18} color={theme.primary} />}
+              onPress={() => restoreEntry(item)}
+            />
+          </View>
+          <View style={styles.actionButton}>
+            <GlassButton
+              isIconButton={true}
+              icon={<Ionicons name="trash" size={18} color={theme.danger} />}
+              onPress={() => permanentDelete(item.id)}
+            />
+          </View>
         </View>
       </View>
       <RichTextRenderer 

@@ -6,12 +6,45 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { getTagColor } from '../../backend/utils/storage';
 import RichTextRenderer from './RichTextRenderer';
+import GlassButton from './GlassButton';
+
+import { Platform } from 'react-native';
+
+import { Animated } from 'react-native';
 
 export default function EntryCard({ entry, onPress, onDelete }) {
   const { theme } = useTheme();
   const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
+  const [isHovered, setIsHovered] = React.useState(false);
+  const [isPressed, setIsPressed] = React.useState(false);
+
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    const isInteracting = isHovered || isPressed;
+    const targetScale = isInteracting
+      ? (theme.is3D ? 1.03 : 1.01)
+      : 1;
+
+    Animated.timing(scaleAnim, {
+      toValue: targetScale,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [isHovered, isPressed, theme.is3D]);
   
   if (!theme) return null;
+
+  const handleMouseEnter = () => {
+    if (Platform.OS === 'web') setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (Platform.OS === 'web') setIsHovered(false);
+  };
+
+  const handlePressIn = () => setIsPressed(true);
+  const handlePressOut = () => setIsPressed(false);
   
   const fontSizes = getFontSizes();
   const fontFamily = getFontFamily();
@@ -56,17 +89,38 @@ export default function EntryCard({ entry, onPress, onDelete }) {
 
   const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth);
   
+  const isInteracting = isHovered || isPressed;
+
+  const hoverStyles = isInteracting ? {
+    shadowOpacity: theme.is3D ? 0.2 : 0.15,
+    shadowOffset: theme.is3D ? { width: 0, height: 8 } : { width: 0, height: 4 },
+    shadowRadius: theme.is3D ? 16 : 8,
+    backgroundColor: theme.is3D ? theme.surfaceHover : undefined
+  } : {};
+
   const CardWrapper = gradientColors ? LinearGradient : View;
   const cardProps = gradientColors ? {
     colors: gradientColors,
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
-    style: styles.card
-  } : { style: styles.plainCard };
+    style: [styles.card, hoverStyles]
+  } : { style: [styles.plainCard, hoverStyles] };
+
+  const webProps = Platform.OS === 'web' ? {
+    onMouseEnter: handleMouseEnter,
+    onMouseLeave: handleMouseLeave,
+  } : {};
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <CardWrapper {...cardProps}>
+    <TouchableOpacity
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={0.9}
+      {...webProps}
+    >
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <CardWrapper {...cardProps}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.date}>{formatDate(entry.date)}</Text>
@@ -79,9 +133,13 @@ export default function EntryCard({ entry, onPress, onDelete }) {
             </Text>
           )}
         </View>
-        <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
-          <Ionicons name="trash-outline" size={18} color={theme.danger} />
-        </TouchableOpacity>
+        <View style={styles.deleteButton}>
+          <GlassButton
+            isIconButton={true}
+            icon={<Ionicons name="trash-outline" size={18} color={theme.danger} />}
+            onPress={onDelete}
+          />
+        </View>
       </View>
       
       <View style={styles.previewContainer}>
@@ -91,6 +149,7 @@ export default function EntryCard({ entry, onPress, onDelete }) {
         />
       </View>
       </CardWrapper>
+      </Animated.View>
     </TouchableOpacity>
   );
 }

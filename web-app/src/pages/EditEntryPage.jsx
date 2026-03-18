@@ -254,14 +254,16 @@ export default function EditEntryPage() {
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
-      padding: '12px 24px',
+      padding: theme.is3D ? '12px 16px' : '12px 24px',
       borderRadius: '8px',
       border: 'none',
-      backgroundColor: theme.accent,
-      color: '#fff',
+      backgroundColor: theme.is3D ? 'transparent' : theme.accent,
+      color: theme.is3D ? theme.accent : '#fff',
       cursor: 'pointer',
       fontSize: '14px',
       fontWeight: '500',
+      transition: 'all 0.3s ease',
+      boxShadow: theme.is3D ? 'none' : undefined,
     },
     content: {
       flex: 1,
@@ -403,9 +405,9 @@ export default function EditEntryPage() {
           </button>
           <span style={styles.headerTitle}>Edit Entry</span>
         </div>
-        <button style={styles.saveButton} onClick={handleSave} disabled={saving}>
+        <button className={theme.is3D ? 'light3d-main-button' : 'regular-main-button'} style={styles.saveButton} onClick={handleSave} disabled={saving}>
           <Save size={16} />
-          {saving ? 'Saving...' : 'Save'}
+          <span style={theme.is3D ? { display: 'none' } : {}}>{saving ? 'Saving...' : 'Save'}</span>
         </button>
       </div>
 

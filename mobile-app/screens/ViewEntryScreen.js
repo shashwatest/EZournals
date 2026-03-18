@@ -5,6 +5,7 @@ import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import RichTextRenderer from '../components/RichTextRenderer';
+import GlassButton from '../components/GlassButton';
 import AudioPlayer from '../components/AudioPlayer';
 import { getTagColor, formatDate, countWords } from '../utils/entryUtils';
 import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
@@ -62,12 +63,13 @@ export default function ViewEntryScreen({ route, navigation }) {
         <View style={styles.headerInfo}>
         <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>Entry Details</Text>
         </View>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('EditEntry', { entry })}
-          style={styles.editButton}
-        >
-          <Ionicons name="create-outline" size={20} color={theme.accent} />
-        </TouchableOpacity>
+        <View style={styles.editButton}>
+          <GlassButton
+            isIconButton={true}
+            icon={<Ionicons name="create-outline" size={20} color={theme.accent} />}
+            onPress={() => navigation.navigate('EditEntry', { entry })}
+          />
+        </View>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>

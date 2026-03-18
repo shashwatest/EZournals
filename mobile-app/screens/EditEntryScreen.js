@@ -9,6 +9,7 @@ import { updateEntry } from '../../backend/utils/storage';
 import { countWords } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import TagInput from '../components/TagInput';
+import GlassButton from '../components/GlassButton';
 import RichTextEditor from '../components/RichTextEditor';
 import { uploadImage, isLocalUri } from '../../backend/utils/mediaUpload';
 
@@ -75,19 +76,22 @@ export default function EditEntryScreen({ route, navigation }) {
       <StatusBar barStyle="dark-content" backgroundColor={theme.surface} />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
+        <View style={styles.backButton}>
+          <GlassButton
+            isIconButton={true}
+            icon={<Ionicons name="arrow-back" size={24} color={theme.text} />}
+            onPress={() => navigation.goBack()}
+          />
+        </View>
         <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>Edit Entry</Text>
-        <TouchableOpacity 
-          onPress={handleSave}
-          style={[styles.saveButton, !content.trim() && styles.saveButtonDisabled]}
-          disabled={!content.trim()}
-        >
-          <Text style={[styles.saveButtonText, !content.trim() && styles.saveButtonTextDisabled, { fontFamily, fontSize: fontSizes.base }]}> 
-            Save
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.saveButton}>
+          <GlassButton
+            isIconButton={true}
+            icon={<Ionicons name="save-outline" size={24} color={!content.trim() ? theme.textLight : theme.accent} />}
+            onPress={handleSave}
+            disabled={!content.trim()}
+          />
+        </View>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>

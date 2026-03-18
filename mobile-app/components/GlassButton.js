@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function GlassButton({ 
   onPress, 
@@ -8,11 +10,28 @@ export default function GlassButton({
   style, 
   textStyle,
   disabled = false,
-  icon = null 
+  icon = null,
+  isIconButton = false
 }) {
   const { theme } = useTheme();
   const [isPressed, setIsPressed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Animation value for scale
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const isInteracting = isHovered || isPressed;
+    const targetScale = isInteracting
+      ? (isIconButton ? (theme.is3D ? 1.1 : 1.05) : (theme.is3D ? 1.05 : (theme.buttonHover?.transform?.[0]?.scale || 1.03)))
+      : 1;
+
+    Animated.timing(scaleAnim, {
+      toValue: targetScale,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [isHovered, isPressed, theme.is3D, isIconButton]);
 
   const handlePressIn = () => setIsPressed(true);
   const handlePressOut = () => setIsPressed(false);
@@ -25,9 +44,33 @@ export default function GlassButton({
     if (Platform.OS === 'web') setIsHovered(false);
   };
 
+  const isInteracting = isHovered || isPressed;
+
+  const iconButtonBaseStyle = isIconButton ? {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 24, // Round for icons
+  } : {};
+
+  const iconButtonHoverStyle = (isIconButton && isInteracting) ? {
+    backgroundColor: theme.is3D ? theme.surfaceHover : 'rgba(0,0,0,0.05)',
+  } : {};
+
+  const regularHoverStyle = (!isIconButton && isInteracting && theme.buttonHover) ? {
+    backgroundColor: theme.buttonHover.backgroundColor,
+    borderColor: theme.buttonHover.borderColor,
+    shadowOpacity: theme.is3D ? 0.2 : theme.buttonHover.shadowOpacity,
+    shadowOffset: theme.is3D ? { width: 0, height: 6 } : theme.glossyButton?.shadowOffset,
+    shadowRadius: theme.is3D ? 12 : theme.glossyButton?.shadowRadius,
+  } : {};
+
   const buttonStyle = [
     styles.button,
-    theme.glossyButton && {
+    !isIconButton && theme.glossyButton && {
       backgroundColor: theme.glossyButton.backgroundColor,
       borderWidth: theme.glossyButton.borderWidth,
       borderColor: theme.glossyButton.borderColor,
@@ -37,14 +80,12 @@ export default function GlassButton({
       shadowRadius: theme.glossyButton.shadowRadius,
       elevation: theme.glossyButton.elevation,
     },
-    (isHovered || isPressed) && theme.buttonHover && {
-      backgroundColor: theme.buttonHover.backgroundColor,
-      borderColor: theme.buttonHover.borderColor,
-      shadowOpacity: theme.buttonHover.shadowOpacity,
-      transform: theme.buttonHover.transform,
-    },
+    iconButtonBaseStyle,
+    regularHoverStyle,
+    iconButtonHoverStyle,
     disabled && styles.disabled,
     style,
+    { transform: [{ scale: scaleAnim }] } // Apply animated scale
   ];
 
   const webProps = Platform.OS === 'web' ? {
@@ -53,7 +94,7 @@ export default function GlassButton({
   } : {};
 
   return (
-    <TouchableOpacity
+    <AnimatedTouchableOpacity
       style={buttonStyle}
       onPress={onPress}
       onPressIn={handlePressIn}
@@ -63,10 +104,12 @@ export default function GlassButton({
       {...webProps}
     >
       {icon}
-      <Text style={[styles.text, { color: theme.text }, textStyle]}>
-        {children}
-      </Text>
-    </TouchableOpacity>
+      {children && (
+        <Text style={[styles.text, { color: theme.text }, textStyle]}>
+          {children}
+        </Text>
+      )}
+    </AnimatedTouchableOpacity>
   );
 }
 

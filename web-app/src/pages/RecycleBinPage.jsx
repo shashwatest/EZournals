@@ -134,7 +134,7 @@ export default function RecycleBinPage() {
     actionButton: {
       padding: '8px',
       borderRadius: '6px',
-      border: 'none',
+      border: theme.is3D ? 'none' : '1px solid transparent', // Keep transparent border for sizing
       backgroundColor: 'transparent',
       cursor: 'pointer',
       display: 'flex',
@@ -207,6 +207,7 @@ export default function RecycleBinPage() {
                   <div style={styles.entryDate}>{formatDate(entry.date)}</div>
                   <div style={styles.entryActions}>
                     <button
+                      className={theme.is3D ? 'light3d-icon-button' : 'regular-icon-button-edit'}
                       style={{ ...styles.actionButton, ...styles.restoreButton }}
                       onClick={() => restoreEntry(entry)}
                       title="Restore"
@@ -214,6 +215,7 @@ export default function RecycleBinPage() {
                       <RefreshCw size={18} />
                     </button>
                     <button
+                      className={theme.is3D ? 'light3d-icon-button' : 'regular-icon-button-delete'}
                       style={{ ...styles.actionButton, ...styles.deleteButton }}
                       onClick={() => permanentDelete(entry.id)}
                       title="Delete Forever"

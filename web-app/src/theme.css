@@ -1,0 +1,61 @@
+/* Light3D Theme Specific Hover Styles */
+
+/* Card hover styles */
+.light3d-card-hover {
+  transition: all 0.3s ease;
+}
+.light3d-card-hover:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+  background-color: var(--theme-surface-hover) !important;
+}
+
+/* Regular theme card hover */
+.regular-card-hover {
+  transition: all 0.3s ease;
+}
+
+/* We inject CSS variables through React style prop on elements that need this */
+.regular-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 20px var(--hover-shadow-color) !important;
+}
+
+/* Icon button hover styles (for Edit/Delete etc) */
+.light3d-icon-button {
+  transition: all 0.3s ease;
+}
+.light3d-icon-button:hover {
+  background-color: rgba(0,0,0,0.05) !important;
+  transform: scale(1.05);
+}
+
+.regular-icon-button-edit {
+  transition: all 0.3s ease;
+}
+.regular-icon-button-edit:hover {
+  background-color: var(--hover-bg-color) !important;
+}
+
+.regular-icon-button-delete {
+  transition: all 0.3s ease;
+}
+.regular-icon-button-delete:hover {
+  background-color: var(--hover-danger-color) !important;
+}
+
+/* Main button hover styles */
+.light3d-main-button {
+  transition: all 0.3s ease;
+}
+.light3d-main-button:hover {
+  background-color: rgba(0,0,0,0.05) !important;
+  transform: scale(1.05);
+}
+
+.regular-main-button {
+  transition: all 0.3s ease;
+}
+.regular-main-button:hover {
+  opacity: 0.9;
+}
