@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { Image, Alert, ActivityIndicator } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { pickImage } from '../utils/media';
 import { getCurrentLocation, formatLocation } from '../utils/location';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
@@ -15,11 +16,15 @@ import { uploadImage, uploadAudio } from '../../backend/utils/mediaUpload';
 import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
 import { detectMoodTags } from '../../backend/utils/geminiService';
 import { StatusBar } from 'react-native';
+import { getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
+import { showAlert } from '../utils/appAlert';
 
 
 export default function AddEntryScreen({ navigation }) {
   const themeContext = useTheme();
-  const { theme, isLoading } = themeContext;
+  const { theme, isLoading, currentTheme } = themeContext;
+  const isGlassTheme = isGlassThemeEnabled(currentTheme);
+  const accentText = theme?.onAccentText || '#fff';
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -46,7 +51,7 @@ export default function AddEntryScreen({ navigation }) {
 
   const handleDetectMood = async () => {
     if (!content.trim()) {
-      Alert.alert('No Content', 'Please write something before detecting mood');
+      await showAlert({ title: 'No Content', message: 'Please write something before detecting mood' });
       return;
     }
 
@@ -63,10 +68,10 @@ export default function AddEntryScreen({ navigation }) {
       });
       
       setSelectedTags(newTags);
-      Alert.alert('Mood Detected', `Added tags: ${suggestedTags.join(', ')}`);
+      await showAlert({ title: 'Mood Detected', message: `Added tags: ${suggestedTags.join(', ')}` });
     } catch (error) {
       console.error('Mood detection error:', error);
-      Alert.alert('Mood Detection Failed', error.message || 'Failed to detect mood');
+      await showAlert({ title: 'Mood Detection Failed', message: error.message || 'Failed to detect mood', confirmTone: 'danger' });
     } finally {
       setDetectingMood(false);
     }
@@ -89,7 +94,7 @@ export default function AddEntryScreen({ navigation }) {
   // Removed stray misplaced async/await block
   const handleSave = async () => {
     if (!content.trim()) {
-      Alert.alert('Empty Entry', 'Please write something before saving');
+      await showAlert({ title: 'Empty Entry', message: 'Please write something before saving' });
       return;
     }
     
@@ -103,7 +108,7 @@ export default function AddEntryScreen({ navigation }) {
           uploadedImageUrl = await uploadImage(imageUrl);
         } catch (error) {
           console.error('Error uploading image:', error);
-          Alert.alert('Warning', 'Failed to upload image, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload image, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -113,7 +118,7 @@ export default function AddEntryScreen({ navigation }) {
           uploadedAudioUrl = await uploadAudio(audioUrl);
         } catch (error) {
           console.error('Error uploading audio:', error);
-          Alert.alert('Warning', 'Failed to upload audio, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload audio, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -127,7 +132,7 @@ export default function AddEntryScreen({ navigation }) {
       });
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save entry');
+      await showAlert({ title: 'Error', message: 'Failed to save entry', confirmTone: 'danger' });
       console.error('[AddEntryScreen] Error saving entry:', error);
     }
   };
@@ -183,9 +188,9 @@ export default function AddEntryScreen({ navigation }) {
               disabled={detectingMood}
             >
               {detectingMood ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={accentText} />
               ) : (
-                <Ionicons name="sparkles" size={18} color="#fff" />
+                <Ionicons name="sparkles" size={18} color={accentText} />
               )}
               <Text style={[styles.moodDetectButtonText, { fontFamily, fontSize: fontSizes.base }]}>
                 {detectingMood ? 'Detecting Mood...' : 'AI Detect Mood'}
@@ -220,7 +225,25 @@ export default function AddEntryScreen({ navigation }) {
         )}
       </ScrollView>
       {showAudioRecorder && (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: theme.surface, padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16, elevation: 8 }}>
+        <View
+          style={[
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              padding: 16,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderWidth: 1,
+            },
+            isGlassTheme
+              ? getGlassPanelStyle(theme, currentTheme, { borderTopLeftRadius: 16, borderTopRightRadius: 16 })
+              : { backgroundColor: theme.surface, borderColor: theme.border, elevation: 8 },
+          ]}
+        >
+          {isGlassTheme && <BlurView intensity={100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+          {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.audioSheetSheen, getGlassSheenStyle(currentTheme)]} />}
           <AudioRecorder onAudioRecorded={(uri) => {
             if (uri && uri !== 'show') setAudioUrl(uri);
             setShowAudioRecorder(false);
@@ -267,7 +290,7 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.border
   },
   saveButtonText: {
-    color: theme.surface,
+    color: theme.onAccentText || '#fff',
     fontWeight: '600',
     fontSize: 16
   },
@@ -377,8 +400,12 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
   },
   moodDetectButtonText: {
-    color: '#fff',
+    color: theme.onAccentText || '#fff',
     fontSize: 14,
     fontWeight: '600',
-  }
+  },
+  audioSheetSheen: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
 });

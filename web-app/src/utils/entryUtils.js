@@ -1,20 +1,8 @@
-export const getPredefinedTags = () => [
-  { name: 'Happy', color: '#FFD700' },
-  { name: 'Sad', color: '#4682B4' },
-  { name: 'Excited', color: '#FF6347' },
-  { name: 'Calm', color: '#98FB98' },
-  { name: 'Anxious', color: '#DDA0DD' },
-  { name: 'Grateful', color: '#F0E68C' },
-  { name: 'Frustrated', color: '#CD5C5C' },
-  { name: 'Peaceful', color: '#87CEEB' },
-  { name: 'Energetic', color: '#FFA500' },
-  { name: 'Reflective', color: '#D3D3D3' },
-];
+import { getCachedMoodTags, getCachedMoodTagColor } from './moodTags';
 
-export const getTagColor = (tagName) => {
-  const tag = getPredefinedTags().find(t => t.name === tagName);
-  return tag ? tag.color : '#95A5A6';
-};
+export const getPredefinedTags = () => getCachedMoodTags();
+
+export const getTagColor = (tagName) => getCachedMoodTagColor(tagName);
 
 export const sortEntries = (entries, sortBy) => {
   switch (sortBy) {

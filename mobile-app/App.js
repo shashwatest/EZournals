@@ -22,25 +22,69 @@ import CloudSettingsScreen from './screens/CloudSettingsScreen';
 import AISettingsScreen from './screens/AISettingsScreen';
 import InsightsScreen from './screens/InsightsScreen';
 import AppGlassBackground from './components/AppGlassBackground';
+import AppAlertHost from './components/AppAlertHost';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Constants from 'expo-constants';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../backend/firebase/config';
+import { getMoodTags } from '../backend/utils/moodTags';
 
 const Stack = createStackNavigator();
 
 function AppNavigator() {
   const { theme, currentTheme } = useTheme();
+  const [user, setUser] = React.useState(undefined);
+  const [authError, setAuthError] = React.useState(null);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (nextUser) => {
+        setUser(nextUser);
+        setAuthError(null);
+      },
+      (error) => {
+        console.error('[AppNavigator] Auth state error:', error);
+        setAuthError(error.message);
+        setUser(null);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
   
   if (!theme) {
     return null;
   }
+
+  if (user === undefined) {
+    return (
+      <View style={[styles.centeredState, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+        <Text style={[styles.stateText, { color: theme.textSecondary }]}>Restoring session...</Text>
+      </View>
+    );
+  }
+
+  if (authError) {
+    return (
+      <View style={[styles.centeredState, { backgroundColor: theme.background }]}>
+        <Text style={[styles.errorTitle, { color: theme.danger }]}>Authentication Error</Text>
+        <Text style={[styles.stateText, { color: theme.textSecondary }]}>{authError}</Text>
+      </View>
+    );
+  }
+
+  const isLoggedIn = !!user;
   
   return (
     <View style={styles.appShell}>
       <AppGlassBackground />
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="Login"
+          key={isLoggedIn ? 'authenticated' : 'guest'}
+          initialRouteName={isLoggedIn ? 'Home' : 'Login'}
           screenOptions={{
             headerShown: false,
             cardStyle: { backgroundColor: currentTheme === 'glassmorphism' ? 'transparent' : theme.background },
@@ -80,25 +124,33 @@ function AppNavigator() {
             },
           }}
         >
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Signup" component={SignupScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="AddEntry" component={AddEntryScreen} />
-          <Stack.Screen name="EditEntry" component={EditEntryScreen} />
-          <Stack.Screen name="ViewEntry" component={ViewEntryScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="Navigate" component={NavigateScreen} />
-          <Stack.Screen name="Overview" component={OverviewScreen} />
-          <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
-          <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
-          <Stack.Screen name="UISettings" component={UISettingsScreen} />
-          <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
-          <Stack.Screen name="CloudSettings" component={CloudSettingsScreen} />
-          <Stack.Screen name="AISettings" component={AISettingsScreen} />
-          <Stack.Screen name="Insights" component={InsightsScreen} />
+          {isLoggedIn ? (
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="AddEntry" component={AddEntryScreen} />
+              <Stack.Screen name="EditEntry" component={EditEntryScreen} />
+              <Stack.Screen name="ViewEntry" component={ViewEntryScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Navigate" component={NavigateScreen} />
+              <Stack.Screen name="Overview" component={OverviewScreen} />
+              <Stack.Screen name="CustomTheme" component={CustomThemeScreen} />
+              <Stack.Screen name="RecycleBin" component={RecycleBinScreen} />
+              <Stack.Screen name="UISettings" component={UISettingsScreen} />
+              <Stack.Screen name="AccountInfo" component={AccountInfoScreen} />
+              <Stack.Screen name="CloudSettings" component={CloudSettingsScreen} />
+              <Stack.Screen name="AISettings" component={AISettingsScreen} />
+              <Stack.Screen name="Insights" component={InsightsScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Signup" component={SignupScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
+      <AppAlertHost />
     </View>
   );
 }
@@ -111,6 +163,10 @@ export default function App() {
     
     GoogleSignin.configure({
       webClientId: webId,
+    });
+
+    getMoodTags().catch((error) => {
+      console.error('Error hydrating mood tags:', error);
     });
   }, []);
 
@@ -129,5 +185,22 @@ const styles = StyleSheet.create({
   appShell: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  centeredState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  stateText: {
+    marginTop: 16,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });

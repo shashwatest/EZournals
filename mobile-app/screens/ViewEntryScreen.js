@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, ActivityIndicator, Alert } from 'react-native';
+import { Image, ActivityIndicator } from 'react-native';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { View, Text, ScrollView, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,9 +9,11 @@ import AudioPlayer from '../components/AudioPlayer';
 import { getTagColor, formatDate, countWords } from '../utils/entryUtils';
 import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
 import { summarizeEntry } from '../../backend/utils/geminiService';
+import { showAlert } from '../utils/appAlert';
 
 export default function ViewEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -38,7 +40,7 @@ export default function ViewEntryScreen({ route, navigation }) {
       setSummary(summaryText);
     } catch (error) {
       console.error('Summarization error:', error);
-      Alert.alert('Summarization Failed', error.message || 'Failed to generate summary');
+      await showAlert({ title: 'Summarization Failed', message: error.message || 'Failed to generate summary', confirmTone: 'danger' });
     } finally {
       setSummarizing(false);
     }
@@ -96,9 +98,9 @@ export default function ViewEntryScreen({ route, navigation }) {
               disabled={summarizing}
             >
               {summarizing ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={accentText} />
               ) : (
-                <Ionicons name="sparkles" size={18} color="#fff" />
+                <Ionicons name="sparkles" size={18} color={accentText} />
               )}
               <Text style={[styles.summarizeButtonText, { fontFamily, fontSize: fontSizes.base }]}>
                 {summarizing ? 'Summarizing...' : 'AI Summarize'}
@@ -309,7 +311,7 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
   },
   summarizeButtonText: {
-    color: '#fff',
+    color: theme.onAccentText || '#fff',
     fontSize: 14,
     fontWeight: '600',
   },

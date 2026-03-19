@@ -24,6 +24,7 @@ export default function CustomThemePage() {
   });
 
   const [selectedField, setSelectedField] = useState(null);
+  const accentText = theme.onAccentText || '#fff';
 
   const colorPalette = [
     '#FF5722', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
@@ -112,7 +113,7 @@ export default function CustomThemePage() {
       gap: '8px',
       padding: '12px 24px',
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       border: 'none',
       borderRadius: '8px',
       fontSize: '14px',

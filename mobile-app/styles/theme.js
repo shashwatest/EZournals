@@ -1,12 +1,13 @@
 // Glassmorphism theme - Pitch black with purple edge glow
 export const glassmorphismTheme = {
-  background: 'rgba(0, 0, 0, 0.78)',
-  surface: 'rgba(255, 255, 255, 0.08)',
-  surfaceHover: 'rgba(255, 255, 255, 0.12)',
+  background: '#000000',
+  surface: 'rgba(0, 0, 0, 0.36)',
+  surfaceHover: 'rgba(0, 0, 0, 0.36)',
   text: '#FFFFFF',
   textSecondary: 'rgba(255, 255, 255, 0.78)',
   textLight: 'rgba(255, 255, 255, 0.5)',
   accent: '#FFFFFF',
+  onAccentText: '#000000',
   accentGlow: 'rgba(255, 255, 255, 0.32)',
   primary: '#FFFFFF',
   danger: '#FF8DA1',
@@ -21,7 +22,7 @@ export const glassmorphismTheme = {
   fontFamily: 'System',
   cardRadius: 16,
   glass: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.16)',
     shadowColor: '#FFFFFF',
@@ -31,7 +32,7 @@ export const glassmorphismTheme = {
     elevation: 12,
   },
   glossyButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.16)',
     shadowColor: '#FFFFFF',
@@ -41,7 +42,7 @@ export const glassmorphismTheme = {
     elevation: 8,
   },
   whiteButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.18)',
     shadowColor: '#FFFFFF',
@@ -51,7 +52,7 @@ export const glassmorphismTheme = {
     elevation: 8,
   },
   buttonHover: {
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
     borderColor: 'rgba(255, 255, 255, 0.22)',
     shadowOpacity: 0.1,
     transform: [{ scale: 1.018 }],
@@ -66,7 +67,7 @@ export const glassmorphismTheme = {
   edit: '#FFFFFF',
   editGlow: 'rgba(255, 255, 255, 0.12)',
   dangerGlow: 'rgba(255, 141, 161, 0.16)',
-  buttonBg: 'rgba(255, 255, 255, 0.08)',
+  buttonBg: 'rgba(0, 0, 0, 0.36)',
 };
 
 // Matte Black theme – calm, elegant, solid block-on-wall feel
@@ -78,6 +79,7 @@ export const matteBlackTheme = {
   textSecondary: '#B0B0B0',  // Brighter secondary text
   textLight: '#6A6A6A',
   accent: '#7C8A97',        // Muted steel-blue
+  onAccentText: '#FFFFFF',
   accentGlow: 'rgba(124, 138, 151, 0.3)',
   primary: '#F0F0F0',
   danger: '#B85C5C',        // Desaturated red
@@ -152,6 +154,7 @@ export const matteWhiteTheme = {
   textSecondary: '#5A5A5A',
   textLight: '#8A8A8A',
   accent: '#5A6B7A',            // Muted steel-blue (darker for light bg)
+  onAccentText: '#FFFFFF',
   accentGlow: 'rgba(90, 107, 122, 0.2)',
   primary: '#1A1A1A',
   danger: '#C45A5A',            // Desaturated red
@@ -225,6 +228,7 @@ export const classyBWTheme = {
   textSecondary: '#CCCCCC',
   textLight: '#888888',
   accent: '#FFD700',     // gold accent for visibility
+  onAccentText: '#000000',
   primary: '#FFFFFF',    // white for icons/buttons
   danger: '#FF5252',
   border: '#333333',
@@ -287,6 +291,7 @@ export const themes = {
     textSecondary: '#00695C',
     textLight: '#80CBC4',
     accent: '#00ACC1',
+    onAccentText: '#FFFFFF',
     primary: '#00897B',
     danger: '#D32F2F',
     border: '#B2DFDB',

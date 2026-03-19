@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getEntries, getPredefinedTags } from '../../backend/utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import EntryCard from '../components/EntryCard';
+import { getMoodTags } from '../../backend/utils/moodTags';
 
 export default function NavigateScreen({ navigation }) {
   const { theme } = useTheme();
@@ -14,13 +15,19 @@ export default function NavigateScreen({ navigation }) {
   const [selectedMood, setSelectedMood] = useState(null);
   const [showEntries, setShowEntries] = useState(false);
   const [markedDates, setMarkedDates] = useState({});
+  const [moods, setMoods] = useState([]);
   const slideAnim = new Animated.Value(0);
 
   if (!theme) return null;
 
   useEffect(() => {
     loadEntries();
+    loadMoods();
   }, []);
+
+  const loadMoods = async () => {
+    setMoods(await getMoodTags());
+  };
 
   useEffect(() => {
     if (showEntries) {
@@ -78,8 +85,6 @@ export default function NavigateScreen({ navigation }) {
     setSelectedMood(null);
     setShowEntries(false);
   };
-
-  const moods = getPredefinedTags();
 
   const renderEntry = ({ item }) => (
     <EntryCard

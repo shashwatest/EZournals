@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { classyBWTheme } from '../styles/theme';
+import { getGlassBackdropStyle, getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
 
 export default function CustomThemeScreen({ navigation, route }) {
-  const { theme, saveCustomTheme, updateCustomTheme } = useTheme();
+  const { theme, currentTheme, saveCustomTheme, updateCustomTheme } = useTheme();
+  const isGlassTheme = isGlassThemeEnabled(currentTheme);
   const editTheme = route?.params?.editTheme;
   const [customColors, setCustomColors] = useState(editTheme || classyBWTheme);
   const [selectedField, setSelectedField] = useState(null);
@@ -142,8 +145,17 @@ export default function CustomThemeScreen({ navigation, route }) {
         animationType="fade"
         onRequestClose={() => setSelectedField(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, getGlassBackdropStyle(currentTheme)]}>
+          <View
+            style={[
+              styles.modalContent,
+              isGlassTheme
+                ? getGlassPanelStyle(theme, currentTheme, { borderRadius: 16 })
+                : { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            {isGlassTheme && <BlurView intensity={96} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+            {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.modalGlassSheen, getGlassSheenStyle(currentTheme)]} />}
             <Text style={styles.modalTitle}>
               Choose Color for {colorFields.find(f => f.key === selectedField)?.label}
             </Text>
@@ -317,7 +329,11 @@ const createStyles = (theme) => StyleSheet.create({
     padding: 20,
     margin: 20,
     maxWidth: 320,
-    width: '90%'
+    width: '90%',
+    borderWidth: 1,
+  },
+  modalGlassSheen: {
+    borderRadius: 16,
   },
   modalTitle: {
     fontSize: 18,

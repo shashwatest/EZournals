@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ArrowLeft, Edit, FileText, Clock, Mic, MapPin, Sparkles, Loader } from 'lucide-react';
 import { getTagColor, formatDate, countWords } from '../utils/entryUtils';
+import { showAlert } from '../utils/appAlert';
 
 const AI_SETTINGS_KEY = 'ai_settings';
 
@@ -64,6 +65,7 @@ export default function ViewEntryPage() {
   const [summary, setSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadEntry();
@@ -101,7 +103,7 @@ export default function ViewEntryPage() {
       setSummary(summaryText);
     } catch (error) {
       console.error('Summarization error:', error);
-      alert(`Summarization Failed: ${error.message}`);
+      await showAlert({ title: 'Summarization Failed', message: error.message, confirmTone: 'danger' });
     } finally {
       setSummarizing(false);
     }
@@ -236,7 +238,7 @@ export default function ViewEntryPage() {
       padding: '12px 20px',
       marginTop: '16px',
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       border: 'none',
       borderRadius: '8px',
       fontSize: '14px',

@@ -8,6 +8,7 @@ import { getComprehensiveInsights } from '../utils/insightsCalculator';
 import { isAIEnabled, getAISettings } from '../utils/aiSettings';
 import { detectThemes, generateInsightsSummary } from '../utils/geminiService';
 import { getTagColor } from '../utils/entryUtils';
+import { showAlert } from '../utils/appAlert';
 
 export default function InsightsPage() {
   const { theme } = useTheme();
@@ -21,6 +22,7 @@ export default function InsightsPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [timeRange, setTimeRange] = useState(30);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadData();
@@ -85,7 +87,7 @@ export default function InsightsPage() {
       setAiSummary(summary);
     } catch (error) {
       console.error('Error generating AI insights:', error);
-      alert('Failed to generate AI insights: ' + error.message);
+      await showAlert({ title: 'AI Insights Failed', message: 'Failed to generate AI insights: ' + error.message, confirmTone: 'danger' });
     } finally {
       setAiLoading(false);
     }
@@ -137,7 +139,7 @@ export default function InsightsPage() {
     timeRangeButtonActive: {
       backgroundColor: theme.accent,
       borderColor: theme.accent,
-      color: '#fff',
+      color: accentText,
     },
     grid: {
       display: 'grid',
@@ -197,7 +199,7 @@ export default function InsightsPage() {
       padding: '12px 20px',
       borderRadius: '8px',
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       border: 'none',
       fontSize: '14px',
       fontWeight: '600',

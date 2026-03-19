@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import PlatformStorage from '../../backend/utils/platformStorage';
 import { getRecycleBin, saveToRecycleBin } from '../../backend/utils/storage';
 import { formatDate } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import RichTextRenderer from '../components/RichTextRenderer';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function RecycleBinScreen({ navigation }) {
   const { theme } = useTheme();
   const [deletedEntries, setDeletedEntries] = useState([]);
+  const [dialogState, setDialogState] = useState({ type: null, entry: null });
 
   useEffect(() => {
     loadDeletedEntries();
@@ -21,45 +23,24 @@ export default function RecycleBinScreen({ navigation }) {
   };
 
   const restoreEntry = async (entry) => {
-    Alert.alert(
-      'Restore Entry',
-      'This entry will be restored to your journal and removed from the recycle bin.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restore',
-          onPress: async () => {
-            const { deletedAt, ...entryData } = entry;
-            
-            const { getEntries } = require('../../backend/utils/storage');
-            const currentEntries = await getEntries();
-            const updatedEntries = [entryData, ...currentEntries];
-            await PlatformStorage.setItem('journal_entries', JSON.stringify(updatedEntries));
-            
-            const remainingDeleted = deletedEntries.filter(e => e.id !== entry.id);
-            await saveToRecycleBin(remainingDeleted);
-            setDeletedEntries(remainingDeleted);
-            
-            Alert.alert('Restored', 'Entry has been restored to your journal');
-          }
-        }
-      ]
-    );
+    const { deletedAt, ...entryData } = entry;
+    
+    const { getEntries } = require('../../backend/utils/storage');
+    const currentEntries = await getEntries();
+    const updatedEntries = [entryData, ...currentEntries];
+    await PlatformStorage.setItem('journal_entries', JSON.stringify(updatedEntries));
+    
+    const remainingDeleted = deletedEntries.filter(e => e.id !== entry.id);
+    await saveToRecycleBin(remainingDeleted);
+    setDeletedEntries(remainingDeleted);
+    setDialogState({ type: null, entry: null });
   };
 
   const permanentDelete = async (entryId) => {
-    Alert.alert(
-      'Permanent Delete',
-      'This will permanently delete the entry. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete Forever', style: 'destructive', onPress: () => {
-          const updatedEntries = deletedEntries.filter(e => e.id !== entryId);
-          saveToRecycleBin(updatedEntries);
-          setDeletedEntries(updatedEntries);
-        }}
-      ]
-    );
+    const updatedEntries = deletedEntries.filter(e => e.id !== entryId);
+    await saveToRecycleBin(updatedEntries);
+    setDeletedEntries(updatedEntries);
+    setDialogState({ type: null, entry: null });
   };
 
   const renderEntry = ({ item }) => (
@@ -67,10 +48,10 @@ export default function RecycleBinScreen({ navigation }) {
       <View style={styles.entryHeader}>
         <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
         <View style={styles.entryActions}>
-          <TouchableOpacity onPress={() => restoreEntry(item)} style={styles.actionButton}>
+          <TouchableOpacity onPress={() => setDialogState({ type: 'restore', entry: item })} style={styles.actionButton}>
             <Ionicons name="refresh" size={18} color={theme.primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => permanentDelete(item.id)} style={styles.actionButton}>
+          <TouchableOpacity onPress={() => setDialogState({ type: 'delete', entry: item })} style={styles.actionButton}>
             <Ionicons name="trash" size={18} color={theme.danger} />
           </TouchableOpacity>
         </View>
@@ -110,6 +91,26 @@ export default function RecycleBinScreen({ navigation }) {
           contentContainerStyle={styles.listContent}
         />
       )}
+      <ConfirmDialog
+        visible={Boolean(dialogState.entry)}
+        title={dialogState.type === 'restore' ? 'Restore Entry?' : 'Delete Entry Forever?'}
+        message={
+          dialogState.type === 'restore'
+            ? 'This entry will be restored to your journal and removed from the recycle bin.'
+            : 'This will permanently delete the entry. This cannot be undone.'
+        }
+        confirmLabel={dialogState.type === 'restore' ? 'Restore Entry' : 'Delete Forever'}
+        confirmTone={dialogState.type === 'restore' ? 'accent' : 'danger'}
+        onCancel={() => setDialogState({ type: null, entry: null })}
+        onConfirm={() => {
+          if (!dialogState.entry) return;
+          if (dialogState.type === 'restore') {
+            restoreEntry(dialogState.entry);
+          } else {
+            permanentDelete(dialogState.entry.id);
+          }
+        }}
+      />
     </View>
   );
 }

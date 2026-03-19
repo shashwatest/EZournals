@@ -1,6 +1,7 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, Alert } from 'react-native';
+import { Text, View, TouchableOpacity } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { showAlert } from '../utils/appAlert';
 
 export default function RichTextRenderer({ content, style }) {
   const { theme } = useTheme();
@@ -43,7 +44,7 @@ export default function RichTextRenderer({ content, style }) {
         
         if (isClickable) {
           return (
-            <TouchableOpacity key={lineIndex} onPress={() => Alert.alert(timeType === 't' ? 'Timestamp' : 'Time Range', timeValue)}>
+            <TouchableOpacity key={lineIndex} onPress={() => showAlert({ title: timeType === 't' ? 'Timestamp' : 'Time Range', message: timeValue })}>
               {headerContent}
             </TouchableOpacity>
           );
@@ -67,7 +68,7 @@ export default function RichTextRenderer({ content, style }) {
         
         if (isClickable) {
           return (
-            <TouchableOpacity key={lineIndex} onPress={() => Alert.alert(timeType === 't' ? 'Timestamp' : 'Time Range', timeValue)}>
+            <TouchableOpacity key={lineIndex} onPress={() => showAlert({ title: timeType === 't' ? 'Timestamp' : 'Time Range', message: timeValue })}>
               {bulletContent}
             </TouchableOpacity>
           );
@@ -153,7 +154,7 @@ export default function RichTextRenderer({ content, style }) {
 
       if (isClickable) {
         return (
-          <TouchableOpacity key={lineIndex} onPress={() => Alert.alert(timeType === 't' ? 'Timestamp' : 'Time Range', timeValue)}>
+          <TouchableOpacity key={lineIndex} onPress={() => showAlert({ title: timeType === 't' ? 'Timestamp' : 'Time Range', message: timeValue })}>
             {textContent}
           </TouchableOpacity>
         );

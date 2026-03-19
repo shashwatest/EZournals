@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 
 import { Ionicons } from '@expo/vector-icons';
 import { getPredefinedTags, getUserTags, saveUserTag, getTagColor } from '../../backend/utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
+import { getMoodTags } from '../../backend/utils/moodTags';
 
 export default function TagInput({ selectedTags, onTagsChange }) {
   const { theme } = useTheme();
@@ -20,7 +21,7 @@ export default function TagInput({ selectedTags, onTagsChange }) {
   }, []);
 
   const loadTags = async () => {
-    setPredefinedTags(getPredefinedTags());
+    setPredefinedTags(await getMoodTags());
     const tags = await getUserTags();
     setUserTags(tags);
   };

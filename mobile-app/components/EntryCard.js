@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,7 +9,7 @@ import { getTagColor } from '../../backend/utils/storage';
 import RichTextRenderer from './RichTextRenderer';
 
 export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
-  const { theme: contextTheme } = useTheme();
+  const { theme: contextTheme, currentTheme } = useTheme();
   const theme = themeOverride || contextTheme;
   const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
   
@@ -43,8 +44,10 @@ export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
 
   // When using matte theme, skip gradients to maintain the matte look
   const isMatte = themeOverride != null;
+  const isGlassTheme = !themeOverride && currentTheme === 'glassmorphism';
 
   const getGradientColors = () => {
+    if (isGlassTheme) return null;
     if (isMatte) return null;
     if (!entry.tags || entry.tags.length === 0) {
       return null;
@@ -59,7 +62,7 @@ export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
 
   const gradientColors = getGradientColors();
 
-  const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth);
+  const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth, isGlassTheme);
   
   const CardWrapper = gradientColors ? LinearGradient : View;
   const cardProps = gradientColors ? {
@@ -67,64 +70,78 @@ export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
     style: styles.card
-  } : { style: styles.plainCard };
+  } : { style: styles.cardContent };
+
+  if (gradientColors) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => [styles.cardShell, pressed && styles.cardPressed]}>
+        <CardWrapper {...cardProps}>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.date}>{formatDate(entry.date)}</Text>
+              {entry.eventTime && (
+                <Text style={styles.eventTime}>{getEventTimeText(entry.eventTime)}</Text>
+              )}
+              {entry.timeRange && (
+                <Text style={styles.timeRange}>
+                  {entry.timeRange.start} - {entry.timeRange.end}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+              <Ionicons name="trash-outline" size={18} color={theme.danger} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.previewContainer}>
+            <RichTextRenderer 
+              content={entry.content.substring(0, isGrid ? 80 : 200) + (entry.content.length > (isGrid ? 80 : 200) ? '...' : '')} 
+              style={styles.preview} 
+            />
+          </View>
+        </CardWrapper>
+      </Pressable>
+    );
+  }
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <CardWrapper {...cardProps}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.date}>{formatDate(entry.date)}</Text>
-          {entry.eventTime && (
-            <Text style={styles.eventTime}>{getEventTimeText(entry.eventTime)}</Text>
-          )}
-          {entry.timeRange && (
-            <Text style={styles.timeRange}>
-              {entry.timeRange.start} - {entry.timeRange.end}
-            </Text>
-          )}
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.cardShell, pressed && styles.cardPressed]}>
+      {isGlassTheme && <BlurView intensity={5} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.cardBlur} />}
+      <View style={styles.cardContent}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.date}>{formatDate(entry.date)}</Text>
+            {entry.eventTime && (
+              <Text style={styles.eventTime}>{getEventTimeText(entry.eventTime)}</Text>
+            )}
+            {entry.timeRange && (
+              <Text style={styles.timeRange}>
+                {entry.timeRange.start} - {entry.timeRange.end}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={18} color={theme.danger} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
-          <Ionicons name="trash-outline" size={18} color={theme.danger} />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.previewContainer}>
+
         <RichTextRenderer 
           content={entry.content.substring(0, isGrid ? 80 : 200) + (entry.content.length > (isGrid ? 80 : 200) ? '...' : '')} 
           style={styles.preview} 
         />
       </View>
-      </CardWrapper>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
-const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth) => StyleSheet.create({
-  card: {
-    backgroundColor: 'transparent',
+const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isGrid, cardWidth, isGlassTheme) => StyleSheet.create({
+  cardShell: {
     marginHorizontal: isGrid ? 8 : 16,
     marginBottom: isGrid ? 12 : 16,
-    padding: isGrid ? 16 : spacing.padding,
-    borderRadius: theme.cardRadius || 14,
-    ...(theme.cardShadow || {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.08,
-      shadowRadius: 2,
-      elevation: 4,
-    }),
-    width: isGrid ? cardWidth : undefined,
-    minHeight: isGrid ? cardWidth * 0.8 : undefined
-  },
-  plainCard: {
-    backgroundColor: theme.surface,
-    marginHorizontal: isGrid ? 8 : 16,
-    marginBottom: isGrid ? 12 : 16,
-    padding: isGrid ? 16 : spacing.padding,
     borderRadius: theme.cardRadius || 14,
     borderWidth: 1,
     borderColor: theme.border || 'transparent',
+    backgroundColor: isGlassTheme ? 'rgba(0, 0, 0, 0.36)' : theme.surface,
     ...(theme.cardShadow || {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
@@ -133,13 +150,31 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isGrid, c
       elevation: 4,
     }),
     width: isGrid ? cardWidth : undefined,
-    minHeight: isGrid ? cardWidth * 0.8 : undefined
+    minHeight: isGrid ? cardWidth * 0.8 : undefined,
+    overflow: 'hidden',
+  },
+  card: {
+    backgroundColor: 'transparent',
+    padding: isGrid ? 16 : spacing.padding,
+    borderRadius: theme.cardRadius || 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8
+  },
+  cardBlur: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: theme.cardRadius || 14,
+  },
+  cardContent: {
+    padding: isGrid ? 16 : spacing.padding,
+    minHeight: isGrid ? cardWidth * 0.8 : undefined,
+  },
+  cardPressed: {
+    borderColor: theme.borderGlow || theme.border,
+    shadowOpacity: 0.14,
   },
   date: {
     fontSize: fontSizes.subtitle,

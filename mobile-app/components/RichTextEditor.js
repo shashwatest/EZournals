@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Image, Modal } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { pickImage } from '../utils/media';
 import { getCurrentLocation, formatLocation } from '../utils/location';
 import { useUISettings } from '../contexts/UISettingsContext';
@@ -9,10 +10,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import AudioRecorder from './AudioRecorder';
 import TimestampButton from './TimestampButton';
 import TimeRangeButton from './TimeRangeButton';
+import { getGlassBackdropStyle, getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
+import { showAlert } from '../utils/appAlert';
 
 export default function RichTextEditor({ value, onChangeText, placeholder, onAudioRecorded, onImageSelected, onLocationTagged }) {
   const themeContext = useTheme();
-  const { theme, isLoading } = themeContext;
+  const { theme, isLoading, currentTheme } = themeContext;
+  const isGlassTheme = isGlassThemeEnabled(currentTheme);
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -134,6 +138,7 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
 
   return (
     <View style={styles.container}>
+      {isGlassTheme && <BlurView intensity={92} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
       <View style={styles.toolbar}>
         <TouchableOpacity 
           style={[styles.toolButton, activeFormats.bold && { backgroundColor: theme.accent }]}
@@ -208,8 +213,17 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
       />
       {/* Attach Modal */}
       <Modal visible={showAttach} transparent animationType="fade" onRequestClose={() => setShowAttach(false)}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' }}>
-          <View style={{ backgroundColor: theme.surface, borderRadius: 12, padding: 20, minWidth: 220 }}>
+        <View style={[styles.modalOverlay, getGlassBackdropStyle(currentTheme)]}>
+          <View
+            style={[
+              styles.attachModal,
+              isGlassTheme
+                ? getGlassPanelStyle(theme, currentTheme, { borderRadius: 20 })
+                : { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            {isGlassTheme && <BlurView intensity={100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+            {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.glassSheen, getGlassSheenStyle(currentTheme)]} />}
             <Text style={{ color: theme.text, fontFamily, fontSize: fontSizes.title, marginBottom: 12 }}>Attach</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
               <TouchableOpacity style={{ alignItems: 'center', margin: 8 }} onPress={() => {
@@ -230,7 +244,7 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
                     setImageUrl(uri);
                     if (onImageSelected) onImageSelected(uri);
                   }
-                } catch (e) { Alert.alert('Error', e.message); }
+                } catch (e) { showAlert({ title: 'Error', message: e.message, confirmTone: 'danger' }); }
               }}>
                 <Ionicons name="image-outline" size={22} color={theme.text} />
                 <Text style={{ color: theme.text, fontSize: 12, fontFamily }}>Image</Text>
@@ -241,7 +255,7 @@ export default function RichTextEditor({ value, onChangeText, placeholder, onAud
                   const loc = await getCurrentLocation();
                   setLocation(loc);
                   if (onLocationTagged) onLocationTagged(loc);
-                } catch (e) { Alert.alert('Error', e.message); }
+                } catch (e) { showAlert({ title: 'Error', message: e.message, confirmTone: 'danger' }); }
               }}>
                 <Ionicons name="location-outline" size={22} color={theme.text} />
                 <Text style={{ color: theme.text, fontSize: 12, fontFamily }}>Location</Text>
@@ -331,5 +345,20 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.text,
     fontWeight: '400',
     minHeight: 200
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  attachModal: {
+    minWidth: 220,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+  },
+  glassSheen: {
+    borderRadius: 20,
+  },
 });

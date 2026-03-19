@@ -16,6 +16,8 @@ export default function DashboardLayout() {
     localStorage.removeItem('theme');
     localStorage.removeItem('uiSettings');
     localStorage.removeItem('customThemes');
+    localStorage.removeItem('journal_entries');
+    localStorage.removeItem('active_local_user_id');
     
     await signOut(auth);
     navigate('/login');

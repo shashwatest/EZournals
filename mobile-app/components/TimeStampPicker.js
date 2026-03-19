@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function TimeStampPicker({ eventTime, onTimeChange }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [customTime, setCustomTime] = useState('');
 
@@ -160,7 +161,7 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 8
   },
   setTimeButtonText: {
-    color: theme.surface,
+    color: theme.onAccentText || '#fff',
     fontSize: 14,
     fontWeight: '600'
   }

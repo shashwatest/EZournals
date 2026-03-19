@@ -3,7 +3,7 @@ import { useUISettings } from '../contexts/UISettingsContext';
 import { Image } from 'react-native';
 import { pickImage } from '../utils/media';
 import { getCurrentLocation, formatLocation } from '../utils/location';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { updateEntry } from '../../backend/utils/storage';
 import { countWords } from '../utils/entryUtils';
@@ -11,9 +11,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import TagInput from '../components/TagInput';
 import RichTextEditor from '../components/RichTextEditor';
 import { uploadImage, isLocalUri } from '../../backend/utils/mediaUpload';
+import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
+import { detectMoodTags } from '../../backend/utils/geminiService';
+import { showAlert } from '../utils/appAlert';
 
 export default function EditEntryScreen({ route, navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -24,18 +28,55 @@ export default function EditEntryScreen({ route, navigation }) {
   const [imageUrl, setImageUrl] = useState(entry.imageUrl || null);
   const [location, setLocation] = useState(entry.location || null);
   const [eventTime, setEventTime] = useState(entry.eventTime || '');
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [detectingMood, setDetectingMood] = useState(false);
 
   if (!theme) return null;
+
+  React.useEffect(() => {
+    checkAIStatus();
+  }, []);
+
+  const checkAIStatus = async () => {
+    const enabled = await isAIEnabled();
+    const settings = await getAISettings();
+    setAiEnabled(enabled && settings.features.moodDetection);
+  };
 
   const handleTextChange = (text) => {
     setContent(text);
     setWordCount(countWords(text.trim()));
   };
 
+  const handleDetectMood = async () => {
+    if (!content.trim()) {
+      await showAlert({ title: 'No Content', message: 'Please write something before detecting mood' });
+      return;
+    }
+
+    setDetectingMood(true);
+    try {
+      const suggestedTags = await detectMoodTags(content);
+      const newTags = [...selectedTags];
+      suggestedTags.forEach(tag => {
+        if (!newTags.includes(tag)) {
+          newTags.push(tag);
+        }
+      });
+      setSelectedTags(newTags);
+      await showAlert({ title: 'Mood Detected', message: `Added tags: ${suggestedTags.join(', ')}` });
+    } catch (error) {
+      console.error('Mood detection error:', error);
+      await showAlert({ title: 'Mood Detection Failed', message: error.message || 'Failed to detect mood', confirmTone: 'danger' });
+    } finally {
+      setDetectingMood(false);
+    }
+  };
+
   // Removed stray misplaced async/await block
   const handleSave = async () => {
     if (!content.trim()) {
-      Alert.alert('Empty Entry', 'Please write something before saving');
+      await showAlert({ title: 'Empty Entry', message: 'Please write something before saving' });
       return;
     }
     
@@ -48,7 +89,7 @@ export default function EditEntryScreen({ route, navigation }) {
           uploadedImageUrl = await uploadImage(imageUrl);
         } catch (error) {
           console.error('Error uploading image:', error);
-          Alert.alert('Warning', 'Failed to upload image, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload image, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -61,7 +102,7 @@ export default function EditEntryScreen({ route, navigation }) {
       });
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update entry');
+      await showAlert({ title: 'Error', message: 'Failed to update entry', confirmTone: 'danger' });
     }
   };
 
@@ -106,6 +147,22 @@ export default function EditEntryScreen({ route, navigation }) {
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
           />
+          {aiEnabled && (
+            <TouchableOpacity
+              style={[styles.moodDetectButton, { backgroundColor: theme.accent, marginTop: 12 }]}
+              onPress={handleDetectMood}
+              disabled={detectingMood}
+            >
+              {detectingMood ? (
+                <Ionicons name="reload" size={18} color={accentText} />
+              ) : (
+                <Ionicons name="sparkles" size={18} color={accentText} />
+              )}
+              <Text style={[styles.moodDetectButtonText, { fontFamily, fontSize: fontSizes.base }]}>
+                {detectingMood ? 'Detecting Mood...' : 'AI Detect Mood'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.footer}>
             <Text style={[styles.wordCount, { fontFamily, fontSize: fontSizes.base }]}> 
               {wordCount} {wordCount === 1 ? 'word' : 'words'}
@@ -169,7 +226,7 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.border
   },
   saveButtonText: {
-    color: theme.surface,
+    color: theme.onAccentText || '#fff',
     fontWeight: '600',
     fontSize: 16
   },
@@ -226,5 +283,19 @@ const createStyles = (theme) => StyleSheet.create({
   timestamp: {
     fontSize: 14,
     color: theme.textLight
+  },
+  moodDetectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  moodDetectButtonText: {
+    color: theme.onAccentText || '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   }
 });

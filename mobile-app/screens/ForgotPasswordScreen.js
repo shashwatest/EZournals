@@ -6,6 +6,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -41,7 +42,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       {error ? <Text style={[styles.error, { color: theme.danger }]}>{error}</Text> : null}
       {message ? <Text style={[styles.message, { color: theme.success }]}>{message}</Text> : null}
       <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={handleReset} disabled={loading}>
-        <Text style={[styles.buttonText, { color: theme.surface }]}>{loading ? 'Sending...' : 'Send Reset Email'}</Text>
+        <Text style={[styles.buttonText, { color: accentText }]}>{loading ? 'Sending...' : 'Send Reset Email'}</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate('Login')}>
         <Text style={[styles.link, { color: theme.accent }]}>Back to Login</Text>

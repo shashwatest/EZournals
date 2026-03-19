@@ -12,6 +12,7 @@ export const calculateMoodTrends = (entries, days = 30) => {
   const moodCounts = {};
   const moodsByDate = {};
   
+  const moodNames = new Set(getCachedMoodTags().map((tag) => tag.name));
   recentEntries.forEach(entry => {
     const dateKey = new Date(entry.date).toISOString().split('T')[0];
     
@@ -20,6 +21,7 @@ export const calculateMoodTrends = (entries, days = 30) => {
     }
     
     (entry.tags || []).forEach(tag => {
+      if (!moodNames.has(tag)) return;
       moodCounts[tag] = (moodCounts[tag] || 0) + 1;
       moodsByDate[dateKey].push(tag);
     });
@@ -216,3 +218,4 @@ export const getComprehensiveInsights = (entries, days = 30) => {
     wordStats
   };
 };
+import { getCachedMoodTags } from './moodTags';

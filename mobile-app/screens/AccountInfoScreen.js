@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image, ScrollView, Platform, Modal } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { auth } from '../../backend/firebase/config';
@@ -12,6 +13,7 @@ import PlatformStorage from '../../backend/utils/platformStorage';
 import { useResponsive } from '../utils/responsive';
 import { saveProfileToCloud, getProfileFromCloud, isUsernameAvailable } from '../../backend/firebase/cloudStorage';
 import { handleProfilePictureUpload } from '../../backend/utils/mediaUpload';
+import { getGlassBackdropStyle, getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
 
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 const validateUsername = (u) => /^[a-zA-Z0-9_]{3,20}$/.test(u);
@@ -47,7 +49,9 @@ const fieldStyles = StyleSheet.create({
 
 export default function AccountInfoScreen({ navigation }) {
   const { profilePic, setProfilePic } = useProfilePic();
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
+  const isGlassTheme = isGlassThemeEnabled(currentTheme);
+  const accentText = theme.onAccentText || '#fff';
   const { isDesktop, isMobile } = useResponsive();
   const user = auth.currentUser;
 
@@ -186,15 +190,24 @@ export default function AccountInfoScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
-    // Clear all local storage
-    await PlatformStorage.removeItem('journal_entries');
-    await PlatformStorage.removeItem('user_profile');
-    await PlatformStorage.removeItem('profile_picture');
-    await PlatformStorage.removeItem('recycleBin');
-    await PlatformStorage.removeItem('last_sync_timestamp');
+    // Clear locally cached user data on manual logout
+    await PlatformStorage.multiRemove([
+      'journal_entries',
+      'user_profile',
+      'profile_picture',
+      'recycleBin',
+      'last_sync_timestamp',
+      'active_local_user_id',
+      'user_tags',
+      'app_theme',
+      'customThemes',
+      'uiSettings',
+      'syncPreferences',
+      'cloud_sync_settings',
+      'ai_settings',
+    ]);
     
     await signOut(auth);
-    navigation.replace('Login');
   };
 
   const dobDate = dateOfBirth ? new Date(dateOfBirth) : new Date(2000, 0, 1);
@@ -229,7 +242,7 @@ export default function AccountInfoScreen({ navigation }) {
                 : <Ionicons name="person-circle-outline" size={120} color={theme.textLight} />
               }
               <View style={[styles.cameraIcon, { backgroundColor: theme.accent }]}>
-                <Ionicons name="camera" size={20} color="#fff" />
+                <Ionicons name="camera" size={20} color={accentText} />
               </View>
             </View>
           </TouchableOpacity>
@@ -357,16 +370,29 @@ export default function AccountInfoScreen({ navigation }) {
           {success ? <Text style={[styles.success, { color: '#22c55e' }]}>{success}</Text> : null}
 
           <TouchableOpacity style={[styles.saveButton, { backgroundColor: theme.accent }]} onPress={handleSaveAll} disabled={loading}>
-            <Ionicons name="checkmark-circle-outline" size={24} color="#fff" />
-            <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save Changes'}</Text>
+            <Ionicons name="checkmark-circle-outline" size={24} color={accentText} />
+            <Text style={[styles.saveButtonText, { color: accentText }]}>{loading ? 'Saving...' : 'Save Changes'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* Gender picker modal */}
       <Modal visible={showGenderPicker} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowGenderPicker(false)}>
-          <View style={[styles.modalSheet, { backgroundColor: theme.surface }]}>
+        <TouchableOpacity
+          style={[styles.modalOverlay, getGlassBackdropStyle(currentTheme)]}
+          activeOpacity={1}
+          onPress={() => setShowGenderPicker(false)}
+        >
+          <View
+            style={[
+              styles.modalSheet,
+              isGlassTheme
+                ? getGlassPanelStyle(theme, currentTheme, { borderTopLeftRadius: 20, borderTopRightRadius: 20 })
+                : { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            {isGlassTheme && <BlurView intensity={100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+            {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.modalGlassSheen, getGlassSheenStyle(currentTheme)]} />}
             <Text style={[styles.modalTitle, { color: theme.text }]}>Select Gender</Text>
             {GENDER_OPTIONS.map(opt => (
               <TouchableOpacity
@@ -423,12 +449,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     padding: 16, borderRadius: 12, marginTop: 24, gap: 8,
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { fontSize: 16, fontWeight: '600' },
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end',
   },
   modalSheet: {
-    borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 32,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 32, borderWidth: 1,
+  },
+  modalGlassSheen: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   modalTitle: {
     fontSize: 16, fontWeight: '600', textAlign: 'center',

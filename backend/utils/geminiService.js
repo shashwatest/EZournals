@@ -1,4 +1,5 @@
 import { getGeminiAPIKey, getGeminiModel, isAIEnabled } from './aiSettings';
+import { getMoodTags } from './moodTags';
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -121,10 +122,9 @@ Summary:`;
  * @returns {Promise<Array<string>>} - Array of suggested mood tags
  */
 export const detectMoodTags = async (content) => {
-  const availableTags = [
-    'Happy', 'Sad', 'Excited', 'Calm', 'Anxious', 
-    'Grateful', 'Frustrated', 'Peaceful', 'Energetic', 'Reflective'
-  ];
+  const moodTags = await getMoodTags();
+  const availableTags = moodTags.map((tag) => tag.name);
+  const fallbackTag = availableTags.includes('Reflective') ? 'Reflective' : availableTags[0];
 
   const prompt = `You are an emotion detection assistant for a journaling app. Analyze the following journal entry and identify the emotions present.
 
@@ -137,7 +137,7 @@ Instructions:
 - Select 1-3 mood tags that best match the emotions in this entry
 - Only use tags from the available list
 - Return ONLY the tag names, separated by commas, nothing else
-- If no clear emotion is detected, return "Reflective"
+- If no clear emotion is detected, return "${fallbackTag}"
 
 Mood tags:`;
 
@@ -155,7 +155,7 @@ Mood tags:`;
       .filter(tag => availableTags.includes(tag))
       .slice(0, 3); // Limit to 3 tags
     
-    return suggestedTags.length > 0 ? suggestedTags : ['Reflective'];
+    return suggestedTags.length > 0 ? suggestedTags : [fallbackTag];
   } catch (error) {
     throw new Error(`Failed to detect mood: ${error.message}`);
   }

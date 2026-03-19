@@ -6,6 +6,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { getPredefinedTags } from '../utils/entryUtils';
+import { getMoodTags } from '../utils/moodTags';
 
 export default function NavigatePage() {
   const { theme } = useTheme();
@@ -17,11 +18,12 @@ export default function NavigatePage() {
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
-
-  const predefinedTags = getPredefinedTags();
+  const [predefinedTags, setPredefinedTags] = useState([]);
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadEntries();
+    getMoodTags().then(setPredefinedTags);
   }, [user]);
 
   const loadEntries = async () => {
@@ -210,7 +212,7 @@ export default function NavigatePage() {
     },
     daySelected: {
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
     },
     emptyDay: {
       visibility: 'hidden',
@@ -400,7 +402,7 @@ export default function NavigatePage() {
                   style={{
                     ...styles.moodButton,
                     borderColor: mood.color,
-                    color: selectedMood === mood.name ? '#fff' : mood.color,
+                    color: selectedMood === mood.name ? accentText : mood.color,
                     backgroundColor: selectedMood === mood.name ? mood.color : 'transparent',
                     ...(selectedMood === mood.name && styles.moodButtonActive),
                   }}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Platform, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { getAISettings, saveAISettings } from '../../backend/utils/aiSettings';
 import { testGeminiConnection } from '../../backend/utils/geminiService';
+import { showAlert } from '../utils/appAlert';
 
 const AVAILABLE_MODELS = [
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Latest and fastest' },
@@ -13,6 +14,7 @@ const AVAILABLE_MODELS = [
 
 export default function AISettingsScreen({ navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [settings, setSettings] = useState({
     enabled: false,
     apiKey: '',
@@ -48,13 +50,13 @@ export default function AISettingsScreen({ navigation }) {
       setSettings(newSettings);
     } catch (error) {
       console.error('Error saving AI settings:', error);
-      Alert.alert('Error', 'Failed to save settings');
+      await showAlert({ title: 'Error', message: 'Failed to save settings', confirmTone: 'danger' });
     }
   };
 
   const toggleAI = async (value) => {
     if (value && !settings.apiKey.trim()) {
-      Alert.alert('API Key Required', 'Please enter your Gemini API key before enabling AI features.');
+      await showAlert({ title: 'API Key Required', message: 'Please enter your Gemini API key before enabling AI features.' });
       return;
     }
     const newSettings = { ...settings, enabled: value };
@@ -68,7 +70,7 @@ export default function AISettingsScreen({ navigation }) {
 
   const saveApiKey = async () => {
     await handleSave(settings);
-    Alert.alert('Success', 'API key saved successfully');
+    await showAlert({ title: 'Success', message: 'API key saved successfully' });
   };
 
   const selectModel = async (modelId) => {
@@ -89,7 +91,7 @@ export default function AISettingsScreen({ navigation }) {
 
   const handleTestConnection = async () => {
     if (!settings.apiKey.trim()) {
-      Alert.alert('API Key Required', 'Please enter your Gemini API key first.');
+      await showAlert({ title: 'API Key Required', message: 'Please enter your Gemini API key first.' });
       return;
     }
 
@@ -100,9 +102,9 @@ export default function AISettingsScreen({ navigation }) {
       
       // Test connection
       await testGeminiConnection();
-      Alert.alert('Success', 'Connection to Gemini API successful!');
+      await showAlert({ title: 'Success', message: 'Connection to Gemini API successful!' });
     } catch (error) {
-      Alert.alert('Connection Failed', error.message || 'Failed to connect to Gemini API. Please check your API key.');
+      await showAlert({ title: 'Connection Failed', message: error.message || 'Failed to connect to Gemini API. Please check your API key.', confirmTone: 'danger' });
     } finally {
       setTesting(false);
     }
@@ -202,11 +204,10 @@ export default function AISettingsScreen({ navigation }) {
             <TouchableOpacity 
               style={[styles.linkButton, { marginTop: 8 }]}
               onPress={() => {
-                Alert.alert(
-                  'Get API Key',
-                  'Visit https://aistudio.google.com/app/apikey to get your free Gemini API key.',
-                  [{ text: 'OK' }]
-                );
+                showAlert({
+                  title: 'Get API Key',
+                  message: 'Visit https://aistudio.google.com/app/apikey to get your free Gemini API key.',
+                });
               }}
             >
               <Text style={[styles.linkText, { color: theme.accent }]}>
@@ -230,11 +231,11 @@ export default function AISettingsScreen({ navigation }) {
               disabled={testing}
             >
               {testing ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={accentText} />
               ) : (
-                <Ionicons name="flash-outline" size={18} color="#fff" />
+                <Ionicons name="flash-outline" size={18} color={accentText} />
               )}
-              <Text style={[styles.buttonText, { color: '#fff' }]}>
+              <Text style={[styles.buttonText, { color: accentText }]}>
                 {testing ? 'Testing...' : 'Test Connection'}
               </Text>
             </TouchableOpacity>

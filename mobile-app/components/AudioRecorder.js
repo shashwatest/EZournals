@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { useTheme } from '../contexts/ThemeContext';
+import { showAlert } from '../utils/appAlert';
 
 export default function AudioRecorder({ onAudioRecorded }) {
   const { theme } = useTheme();
@@ -15,7 +16,7 @@ export default function AudioRecorder({ onAudioRecorded }) {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== 'granted') {
-        Alert.alert('Permission required', 'Please grant microphone permission to record audio');
+        await showAlert({ title: 'Permission Required', message: 'Please grant microphone permission to record audio' });
         return;
       }
 
@@ -32,7 +33,7 @@ export default function AudioRecorder({ onAudioRecorded }) {
       setIsRecording(true);
     } catch (err) {
       console.error('Failed to start recording', err);
-      Alert.alert('Error', 'Failed to start recording');
+      await showAlert({ title: 'Error', message: 'Failed to start recording', confirmTone: 'danger' });
     }
   };
 
@@ -51,7 +52,7 @@ export default function AudioRecorder({ onAudioRecorded }) {
       setRecording(null);
     } catch (err) {
       console.error('Failed to stop recording', err);
-      Alert.alert('Error', 'Failed to stop recording');
+      await showAlert({ title: 'Error', message: 'Failed to stop recording', confirmTone: 'danger' });
     }
   };
 

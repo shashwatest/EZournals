@@ -18,6 +18,7 @@ const ENTRIES_COLLECTION = 'entries';
 const USER_PROFILE_COLLECTION = 'userProfiles';
 const LAST_SYNC_KEY = 'last_sync_timestamp';
 const SYNC_SETTINGS_KEY = 'cloud_sync_settings';
+const LOCAL_CACHE_USER_KEY = 'active_local_user_id';
 
 /**
  * Get user's sync settings
@@ -200,6 +201,7 @@ export const syncLocalToCloud = async () => {
 
     // Update last sync time
     await PlatformStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+    await PlatformStorage.setItem(LOCAL_CACHE_USER_KEY, user.uid);
 
 
     return { success: true, synced: syncedCount };
@@ -233,6 +235,7 @@ export const syncCloudToLocal = async () => {
 
     // Update last sync time
     await PlatformStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+    await PlatformStorage.setItem(LOCAL_CACHE_USER_KEY, user.uid);
 
 
     return { success: true, downloaded: cloudEntries.length };

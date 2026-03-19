@@ -8,9 +8,11 @@ import { getComprehensiveInsights } from '../../backend/utils/insightsCalculator
 import { isAIEnabled, getAISettings } from '../../backend/utils/aiSettings';
 import { detectThemes, generateInsightsSummary } from '../../backend/utils/geminiService';
 import { getTagColor } from '../utils/entryUtils';
+import { showAlert } from '../utils/appAlert';
 
 export default function InsightsScreen({ navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const { getFontFamily, getFontSizes } = useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -73,7 +75,7 @@ export default function InsightsScreen({ navigation }) {
       setAiSummary(summary);
     } catch (error) {
       console.error('Error generating AI insights:', error);
-      alert('Failed to generate AI insights: ' + error.message);
+      await showAlert({ title: 'AI Insights Failed', message: 'Failed to generate AI insights: ' + error.message, confirmTone: 'danger' });
     } finally {
       setAiLoading(false);
     }
@@ -152,9 +154,9 @@ export default function InsightsScreen({ navigation }) {
                 disabled={aiLoading}
               >
                 {aiLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={accentText} />
                 ) : (
-                  <Ionicons name="sparkles" size={18} color="#fff" />
+                  <Ionicons name="sparkles" size={18} color={accentText} />
                 )}
                 <Text style={styles.generateButtonText}>
                   {aiLoading ? 'Generating...' : 'Generate AI Insights'}
@@ -351,7 +353,7 @@ const createStyles = (theme, fontFamily, fontSizes) => StyleSheet.create({
     fontFamily,
   },
   timeRangeTextActive: {
-    color: '#fff',
+    color: theme.onAccentText || '#fff',
   },
   card: {
     backgroundColor: theme.surface,
@@ -390,7 +392,7 @@ const createStyles = (theme, fontFamily, fontSizes) => StyleSheet.create({
     backgroundColor: theme.accent,
   },
   generateButtonText: {
-    color: '#fff',
+    color: theme.onAccentText || '#fff',
     fontSize: 14,
     fontWeight: '600',
     fontFamily,

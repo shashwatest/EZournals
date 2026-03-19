@@ -5,6 +5,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { BarChart3 } from 'lucide-react';
 import { getPredefinedTags, calculateStats } from '../utils/entryUtils';
+import { getMoodTags } from '../utils/moodTags';
 
 export default function AnalyticsPage() {
   const { theme } = useTheme();
@@ -18,6 +19,7 @@ export default function AnalyticsPage() {
   const [customEndDate, setCustomEndDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadData();
@@ -26,6 +28,7 @@ export default function AnalyticsPage() {
   const loadData = async () => {
     if (!user) return;
     try {
+      await getMoodTags();
       const q = query(collection(db, 'entries'), where('userId', '==', user.uid));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -104,7 +107,7 @@ export default function AnalyticsPage() {
     timeRangeButtonActive: {
       backgroundColor: theme.accent,
       borderColor: theme.accent,
-      color: '#fff',
+      color: accentText,
     },
     customDateRange: {
       display: 'flex',

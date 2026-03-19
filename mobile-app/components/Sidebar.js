@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, StatusBar } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { getGlassBackdropStyle, getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
 
 export default function Sidebar({ visible, onClose, navigation, isPersistent = false, themeOverride }) {
-  const { theme: contextTheme } = useTheme();
+  const { theme: contextTheme, currentTheme } = useTheme();
   const theme = themeOverride || contextTheme;
+  const isGlassTheme = isGlassThemeEnabled(currentTheme);
   const { getFontFamily, getFontSizes } = require('../contexts/UISettingsContext').useUISettings();
   const fontFamily = getFontFamily();
   const fontSizes = getFontSizes();
@@ -40,7 +43,17 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
   // Desktop persistent sidebar (no modal)
   if (isPersistent) {
     return (
-      <View style={[styles.sidebar, styles.persistentSidebar, { backgroundColor: theme.surface, borderRightWidth: 1, borderRightColor: theme.border }]}> 
+      <View
+        style={[
+          styles.sidebar,
+          styles.persistentSidebar,
+          isGlassTheme
+            ? [getGlassPanelStyle(theme, currentTheme), styles.glassSidebar]
+            : { backgroundColor: theme.surface, borderRightWidth: 1, borderRightColor: theme.border },
+        ]}
+      >
+        {isGlassTheme && <BlurView intensity={25} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+        {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.glassSheen, getGlassSheenStyle(currentTheme)]} />}
         <View style={[styles.header, styles.persistentHeader, { borderBottomColor: theme.border }]}>
           <Text style={[styles.title, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
         </View>
@@ -108,8 +121,26 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <StatusBar backgroundColor="rgba(0,0,0,0.5)" />
-        <View style={[styles.sidebar, { backgroundColor: theme.surface }]}> 
+        <StatusBar backgroundColor={isGlassTheme ? 'rgba(0,0,0,0.16)' : 'rgba(0,0,0,0.5)'} />
+        {isGlassTheme && (
+          <BlurView
+            intensity={15}
+            tint="dark"
+            experimentalBlurMethod="dimezisBlurView"
+            style={StyleSheet.absoluteFill}
+          />
+        )}
+        <View
+          style={[
+            styles.sidebar,
+            isGlassTheme
+              ? [getGlassPanelStyle(theme, currentTheme), styles.glassSidebar]
+              : { backgroundColor: theme.surface },
+          ]}
+        >
+          {isGlassTheme && <BlurView intensity={60} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+          {isGlassTheme && <View pointerEvents="none" style={styles.panelTint} />}
+          {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.glassSheen, getGlassSheenStyle(currentTheme)]} />}
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <Text style={[styles.title, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>EZournals</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -171,7 +202,7 @@ export default function Sidebar({ visible, onClose, navigation, isPersistent = f
             <Text style={[styles.version, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}>Version 1.0</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.backdrop} onPress={onClose} />
+        <TouchableOpacity style={[styles.backdrop, getGlassBackdropStyle(currentTheme)]} onPress={onClose} />
       </View>
     </Modal>
   );
@@ -195,7 +226,20 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 280,
-    paddingTop: 50
+    paddingTop: 50,
+  },
+  glassSidebar: {
+    borderRightWidth: 1,
+  },
+  glassSheen: {
+    borderTopRightRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  panelTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0)',
+    borderTopRightRadius: 28,
+    borderBottomRightRadius: 28,
   },
   header: {
     flexDirection: 'row',

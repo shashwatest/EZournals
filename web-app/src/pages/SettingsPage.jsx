@@ -6,6 +6,8 @@ import { Palette, Tag, Info, Plus, X, Cloud, RefreshCw, Edit2, Trash2, Check, Ch
 import { collection, getDocs, setDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { formatSyncTime } from '../utils/entryUtils';
+import { showConfirm } from '../utils/appAlert';
+import { getMoodTags, addMoodTag, updateMoodTag, deleteMoodTag } from '../utils/moodTags';
 
 export default function SettingsPage() {
   const { theme, currentTheme, changeTheme, customThemes, allThemes, defaultThemes, deleteCustomTheme } = useTheme();
@@ -13,9 +15,14 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [userTags, setUserTags] = useState([]);
   const [newTag, setNewTag] = useState('');
+  const [moodTags, setMoodTags] = useState([]);
+  const [newMoodTag, setNewMoodTag] = useState('');
+  const [editingMoodTag, setEditingMoodTag] = useState(null);
+  const [editingMoodName, setEditingMoodName] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [syncMessage, setSyncMessage] = useState('');
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadSettings();
@@ -63,6 +70,7 @@ export default function SettingsPage() {
     if (savedTags) {
       setUserTags(JSON.parse(savedTags));
     }
+    getMoodTags().then(setMoodTags);
   };
 
   const addNewTag = () => {
@@ -78,6 +86,28 @@ export default function SettingsPage() {
     const updatedTags = userTags.filter(tag => tag !== tagToDelete);
     setUserTags(updatedTags);
     localStorage.setItem('userTags', JSON.stringify(updatedTags));
+  };
+
+  const addNewMood = async () => {
+    try {
+      setMoodTags(await addMoodTag(newMoodTag));
+      setNewMoodTag('');
+    } catch (error) {
+      setSyncMessage(error.message);
+      setTimeout(() => setSyncMessage(''), 3000);
+    }
+  };
+
+  const saveMoodEdit = async () => {
+    if (!editingMoodTag) return;
+    try {
+      setMoodTags(await updateMoodTag(editingMoodTag, editingMoodName));
+      setEditingMoodTag(null);
+      setEditingMoodName('');
+    } catch (error) {
+      setSyncMessage(error.message);
+      setTimeout(() => setSyncMessage(''), 3000);
+    }
   };
 
   const styles = {
@@ -136,7 +166,7 @@ export default function SettingsPage() {
       width: '40px',
       height: '40px',
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       border: 'none',
       borderRadius: '8px',
       cursor: 'pointer',
@@ -215,7 +245,7 @@ export default function SettingsPage() {
       padding: '14px 24px',
       border: 'none',
       borderRadius: '8px',
-      color: '#fff',
+      color: accentText,
       fontSize: '16px',
       fontWeight: '600',
       cursor: 'pointer',
@@ -350,7 +380,7 @@ export default function SettingsPage() {
                 gap: '8px',
                 padding: '8px 16px',
                 backgroundColor: theme.accent,
-                color: '#fff',
+                color: accentText,
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '14px',
@@ -406,8 +436,14 @@ export default function SettingsPage() {
                       color: theme.danger,
                       padding: '4px',
                     }}
-                    onClick={() => {
-                      if (window.confirm(`Delete theme "${t.name}"?`)) {
+                    onClick={async () => {
+                      const confirmed = await showConfirm({
+                        title: 'Delete Theme',
+                        message: `Delete theme "${t.name}"?`,
+                        confirmLabel: 'Delete',
+                        confirmTone: 'danger',
+                      });
+                      if (confirmed) {
                         deleteCustomTheme(t.id);
                       }
                     }}
@@ -422,6 +458,88 @@ export default function SettingsPage() {
               No custom themes yet. Create one to get started!
             </p>
           )}
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>
+          <Tag size={20} />
+          Mood Tags
+        </h2>
+        <div style={styles.tagInputContainer}>
+          <input
+            type="text"
+            style={styles.tagInput}
+            placeholder="Create mood tag"
+            value={newMoodTag}
+            onChange={(e) => setNewMoodTag(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addNewMood()}
+          />
+          <button style={styles.addButton} onClick={addNewMood}>
+            <Plus size={20} />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {moodTags.map((tag) => (
+            <div
+              key={tag.name}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px',
+                border: `1px solid ${theme.border}`,
+                borderRadius: '8px',
+              }}
+            >
+              <div style={{ ...styles.themeColor, backgroundColor: tag.color }} />
+              {editingMoodTag === tag.name ? (
+                <input
+                  type="text"
+                  style={styles.tagInput}
+                  value={editingMoodName}
+                  onChange={(e) => setEditingMoodName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && saveMoodEdit()}
+                  autoFocus
+                />
+              ) : (
+                <span style={styles.themeLabel}>{tag.name}</span>
+              )}
+              {editingMoodTag === tag.name ? (
+                <>
+                  <button style={styles.deleteButton} onClick={saveMoodEdit}>
+                    <Check size={16} />
+                  </button>
+                  <button style={styles.deleteButton} onClick={() => { setEditingMoodTag(null); setEditingMoodName(''); }}>
+                    <X size={16} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button style={styles.deleteButton} onClick={() => { setEditingMoodTag(tag.name); setEditingMoodName(tag.name); }}>
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    style={styles.deleteButton}
+                    onClick={async () => {
+                      const confirmed = await showConfirm({
+                        title: 'Delete Mood Tag',
+                        message: `Delete "${tag.name}" and remove it from existing entries?`,
+                        confirmLabel: 'Delete',
+                        confirmTone: 'danger',
+                      });
+                      if (confirmed) {
+                        setMoodTags(await deleteMoodTag(tag.name));
+                      }
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

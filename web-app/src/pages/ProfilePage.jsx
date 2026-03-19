@@ -45,6 +45,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadProfileData();
@@ -152,7 +153,7 @@ export default function ProfilePage() {
     avatar: {
       width: '88px', height: '88px', borderRadius: '50%', backgroundColor: theme.accent,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontSize: '28px', fontWeight: '600', overflow: 'hidden', flexShrink: 0,
+      color: accentText, fontSize: '28px', fontWeight: '600', overflow: 'hidden', flexShrink: 0,
     },
     cameraLabel: {
       position: 'absolute', bottom: 0, right: 0,
@@ -180,7 +181,7 @@ export default function ProfilePage() {
     textarea: { flex: 1, border: 'none', outline: 'none', backgroundColor: 'transparent', color: theme.text, fontSize: '15px', resize: 'vertical', minHeight: '60px' },
     saveBtn: {
       display: 'flex', alignItems: 'center', gap: '8px', padding: '13px 28px',
-      backgroundColor: theme.accent, color: '#fff', border: 'none',
+      backgroundColor: theme.accent, color: accentText, border: 'none',
       borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', width: '100%',
       justifyContent: 'center',
     },
@@ -207,7 +208,7 @@ export default function ProfilePage() {
               }
             </div>
             <label style={s.cameraLabel} htmlFor="profile-pic-input" title={uploading ? 'Uploading...' : 'Change photo'}>
-              <Camera size={14} color="#fff" />
+              <Camera size={14} color={accentText} />
               <input id="profile-pic-input" type="file" accept="image/*" onChange={handleProfilePicture} style={{ display: 'none' }} disabled={uploading} />
             </label>
           </div>

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Image, Platform } from 'react-native';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, StatusBar, TextInput } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { getEntries, deleteEntry, getRecycleBin, saveToRecycleBin } from '../../backend/utils/storage';
+import PlatformStorage from '../../backend/utils/platformStorage';
 import { sortEntries, countWords } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUISettings } from '../contexts/UISettingsContext';
@@ -10,17 +12,21 @@ import { useResponsive } from '../utils/responsive';
 import EntryCard from '../components/EntryCard';
 import Sidebar from '../components/Sidebar';
 import LoadingScreen from '../components/LoadingScreen';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function HomeScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
   const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
-  const { isDesktop, isMobile, containerWidth, cardColumns } = useResponsive();
+  const { isDesktop, isMobile, cardColumns } = useResponsive();
   const [entries, setEntries] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
   const [showSidebar, setShowSidebar] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const hasSeenInitialCloudSnapshot = useRef(false);
+  const isGlassTheme = currentTheme === 'glassmorphism';
 
   const fontSizes = getFontSizes();
   const fontFamily = getFontFamily();
@@ -37,30 +43,73 @@ export default function HomeScreen({ navigation }) {
   }, [navigation]);
 
   useEffect(() => {
-    // Set up real-time sync listener
-    const { subscribeToCloudChanges } = require('../../backend/firebase/cloudStorage');
-    const unsubscribe = subscribeToCloudChanges((changes) => {
-      // Reload data when cloud changes detected
+    const { subscribeToCloudChanges, syncCloudToLocal } = require('../../backend/firebase/cloudStorage');
+    const unsubscribe = subscribeToCloudChanges(async () => {
+      if (!hasSeenInitialCloudSnapshot.current) {
+        hasSeenInitialCloudSnapshot.current = true;
+        return;
+      }
+
+      await syncCloudToLocal().catch(err => console.log('Realtime cloud sync skipped:', err.message));
       loadData();
     });
-    
-    return () => unsubscribe();
+
+    return () => {
+      hasSeenInitialCloudSnapshot.current = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     if (entries.length > 0) {
-      const sortedEntries = sortEntries(entries, settings.sortBy);
-      setFilteredEntries(sortedEntries);
+      setFilteredEntries(sortEntries(entries, settings.sortBy));
     }
   }, [settings.sortBy, entries]);
 
   const loadData = async () => {
     try {
-      // Sync from cloud first (downloads latest entries)
+      const { auth } = require('../../backend/firebase/config');
       const { syncCloudToLocal } = require('../../backend/firebase/cloudStorage');
-      await syncCloudToLocal().catch(err => console.log('Cloud sync skipped:', err.message));
+      const user = auth.currentUser;
+
+      if (user) {
+        const [cachedUserId, cachedEntriesJson] = await Promise.all([
+          PlatformStorage.getItem('active_local_user_id'),
+          PlatformStorage.getItem('journal_entries'),
+        ]);
+
+        let localEntries = [];
+        if (cachedEntriesJson) {
+          try {
+            localEntries = JSON.parse(cachedEntriesJson);
+          } catch {
+            localEntries = [];
+          }
+        }
+
+        const localEntriesBelongToUser =
+          localEntries.length > 0 && localEntries.every((entry) => entry.userId === user.uid);
+        const hasLocalCache =
+          Boolean(cachedEntriesJson) &&
+          (cachedUserId === user.uid || (!cachedUserId && localEntriesBelongToUser));
+
+        if ((cachedUserId && cachedUserId !== user.uid) || (cachedEntriesJson && !hasLocalCache)) {
+          await PlatformStorage.multiRemove([
+            'journal_entries',
+            'recycleBin',
+            'user_profile',
+            'profile_picture',
+            'last_sync_timestamp',
+          ]);
+        }
+
+        if (!hasLocalCache) {
+          await syncCloudToLocal().catch(err => console.log('Initial cloud hydration skipped:', err.message));
+        } else {
+          await PlatformStorage.setItem('active_local_user_id', user.uid);
+        }
+      }
       
-      // Then load from local storage (now includes cloud data)
       const data = await getEntries();
       const sortedData = sortEntries(data, settings.sortBy);
       setEntries(sortedData);
@@ -93,25 +142,18 @@ export default function HomeScreen({ navigation }) {
   const handleDelete = async (id) => {
     const entryToDelete = entries.find(e => e.id === id);
     if (!entryToDelete) return;
+    setDeleteCandidate(entryToDelete);
+  };
 
-    Alert.alert(
-      'Move To Recycle Bin',
-      'This entry will be removed from your journal and moved to the recycle bin until you restore or permanently delete it.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Move Entry',
-          style: 'destructive',
-          onPress: async () => {
-            const deletedEntry = { ...entryToDelete, deletedAt: new Date().toISOString() };
-            const recycleBin = await getRecycleBin();
-            await saveToRecycleBin([...recycleBin, deletedEntry]);
-            await deleteEntry(id);
-            loadData();
-          }
-        }
-      ]
-    );
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return;
+
+    const deletedEntry = { ...deleteCandidate, deletedAt: new Date().toISOString() };
+    const recycleBin = await getRecycleBin();
+    await saveToRecycleBin([...recycleBin, deletedEntry]);
+    await deleteEntry(deleteCandidate.id);
+    setDeleteCandidate(null);
+    loadData();
   };
 
   const renderEntry = ({ item }) => (
@@ -126,131 +168,127 @@ export default function HomeScreen({ navigation }) {
 
   const { auth } = require('../../backend/firebase/config');
   const user = auth.currentUser;
+
+  const headerContent = (
+    <>
+      {!isDesktop && (
+        <TouchableOpacity style={styles.menuButton} onPress={() => setShowSidebar(true)}>
+          <Ionicons name="menu-outline" size={24} color={theme.text} />
+        </TouchableOpacity>
+      )}
+      <View style={styles.headerCenter}>
+        <Text style={[styles.greeting, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>
+          {isDesktop ? 'My Journal' : 'EZournals'}
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}>
+          {stats.totalEntries} entries · {stats.totalWords} words
+        </Text>
+      </View>
+      <View style={styles.headerRight}>
+        <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
+          <Ionicons name="search-outline" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('AccountInfo')}>
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+          ) : (
+            <Ionicons name="person-circle-outline" size={32} color={theme.text} />
+          )}
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
+  const searchContent = (
+    <>
+      <Ionicons name="search-outline" size={20} color={theme.textLight} />
+      <TextInput
+        style={[styles.searchInput, { color: theme.text }]}
+        placeholder="Search entries..."
+        placeholderTextColor={theme.textLight}
+        value={searchQuery}
+        onChangeText={handleSearch}
+        autoFocus
+      />
+      {searchQuery.length > 0 && (
+        <TouchableOpacity onPress={() => handleSearch('')}>
+          <Ionicons name="close-circle" size={20} color={theme.textLight} />
+        </TouchableOpacity>
+      )}
+    </>
+  );
   
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}> 
-      <StatusBar barStyle="dark-content" backgroundColor={theme.background} translucent={false} />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isGlassTheme ? 'light-content' : 'dark-content'} backgroundColor={theme.background} translucent={false} />
       
-      {/* Desktop: Persistent Sidebar */}
       {isDesktop && (
         <View style={styles.desktopSidebar}>
-          <Sidebar 
-            visible={true}
-            onClose={() => {}}
-            navigation={navigation}
-            isPersistent={true}
-          />
+          <Sidebar visible={true} onClose={() => {}} navigation={navigation} isPersistent={true} />
         </View>
       )}
       
-      {/* Main Content Area */}
       <View style={styles.mainContent}>
-        <View style={[styles.header, { backgroundColor: theme.surface }]}> 
-          {!isDesktop && (
-            <TouchableOpacity 
-              style={styles.menuButton}
-              onPress={() => setShowSidebar(true)}
-            >
-              <Ionicons name="menu-outline" size={24} color={theme.text} />
-            </TouchableOpacity>
-          )}
-          <View style={styles.headerCenter}>
-            <Text style={[styles.greeting, { color: theme.text, fontFamily, fontSize: fontSizes.header }]}>
-              {isDesktop ? 'My Journal' : 'EZournals'}
-            </Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.subtitle }]}> 
-              {stats.totalEntries} entries · {stats.totalWords} words
-            </Text>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity 
-              style={styles.searchButton}
-              onPress={() => setShowSearch(!showSearch)}
-            >
-              <Ionicons name="search-outline" size={24} color={theme.text} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.profileButton}
-              onPress={() => navigation.navigate('AccountInfo')}
-            >
-              {user?.photoURL ? (
-                <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
-              ) : (
-                <Ionicons name="person-circle-outline" size={32} color={theme.text} />
-              )}
-            </TouchableOpacity>
-          </View>
+        <View style={[styles.header, isGlassTheme ? styles.glassHeader : { backgroundColor: theme.surface }]}>
+          {isGlassTheme && <BlurView intensity={5} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+          {headerContent}
         </View>
 
-      {showSearch && (
-        <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
-          <Ionicons name="search-outline" size={20} color={theme.textLight} />
-          <TextInput
-            style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search entries..."
-            placeholderTextColor={theme.textLight}
-            value={searchQuery}
-            onChangeText={handleSearch}
-            autoFocus
+        {showSearch && (
+          <View style={[styles.searchContainer, isGlassTheme ? styles.glassSearchContainer : { backgroundColor: theme.surface }]}>
+            {isGlassTheme && <BlurView intensity={96} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
+            {searchContent}
+          </View>
+        )}
+
+        {filteredEntries.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="book-outline" size={64} color={theme.textLight} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.title }]}>
+              {searchQuery ? 'No entries found' : 'Your journal awaits'}
+            </Text>
+            <Text style={[styles.emptySubtext, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}>
+              {searchQuery ? 'Try a different search term' : 'Capture your thoughts and memories'}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredEntries}
+            renderItem={renderEntry}
+            keyExtractor={item => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            numColumns={isDesktop ? cardColumns : settings.cardLayout === 'grid' ? 2 : 1}
+            key={`${settings.cardLayout}-${isDesktop ? cardColumns : 1}`}
+            columnWrapperStyle={isDesktop || settings.cardLayout === 'grid' ? styles.gridRow : null}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => handleSearch('')}>
-              <Ionicons name="close-circle" size={20} color={theme.textLight} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {filteredEntries.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="book-outline" size={64} color={theme.textLight} />
-          <Text style={[styles.emptyText, { color: theme.textSecondary, fontFamily, fontSize: fontSizes.title }]}> 
-            {searchQuery ? 'No entries found' : 'Your journal awaits'}
-          </Text>
-          <Text style={[styles.emptySubtext, { color: theme.textLight, fontFamily, fontSize: fontSizes.subtitle }]}> 
-            {searchQuery ? 'Try a different search term' : 'Capture your thoughts and memories'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredEntries}
-          renderItem={renderEntry}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          numColumns={isDesktop ? cardColumns : settings.cardLayout === 'grid' ? 2 : 1}
-          key={`${settings.cardLayout}-${isDesktop ? cardColumns : 1}`}
-          columnWrapperStyle={isDesktop || settings.cardLayout === 'grid' ? styles.gridRow : null}
-        />
-      )}
+        )}
       
-      <TouchableOpacity 
-        style={styles.floatingAddButton}
-        onPress={() => navigation.navigate('AddEntry')}
-      >
-        <Ionicons name="create-outline" size={24} color={theme.accent} />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.floatingAddButton} onPress={() => navigation.navigate('AddEntry')}>
+          <Ionicons name="create-outline" size={24} color={theme.accent} />
+        </TouchableOpacity>
       
-      {/* Mobile: Overlay Sidebar */}
-      {!isDesktop && (
-        <Sidebar 
-          visible={showSidebar}
-          onClose={() => setShowSidebar(false)}
-          navigation={navigation}
-          isPersistent={false}
+        {!isDesktop && (
+          <Sidebar 
+            visible={showSidebar}
+            onClose={() => setShowSidebar(false)}
+            navigation={navigation}
+            isPersistent={false}
+          />
+        )}
+        <ConfirmDialog
+          visible={Boolean(deleteCandidate)}
+          title="Move To Recycle Bin?"
+          message="This entry will be removed from your journal and moved to the recycle bin until you restore or permanently delete it."
+          confirmLabel="Move Entry"
+          confirmTone="danger"
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={confirmDelete}
         />
-      )}
-        </View>
+      </View>
     </View>
   );
 }
-
-const getTimeOfDay = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'morning';
-  if (hour < 17) return 'afternoon';
-  return 'evening';
-};
 
 const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop, isMobile) => StyleSheet.create({
   container: {
@@ -270,7 +308,7 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'left',
     paddingHorizontal: isDesktop ? 32 : 16,
     paddingVertical: isDesktop ? 20 : 24,
     paddingTop: isMobile ? 52 : 20,
@@ -278,21 +316,25 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
   },
+  glassHeader: {
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
+    overflow: 'hidden',
+  },
   greeting: {
     fontSize: fontSizes.header,
     fontWeight: '600',
     color: theme.text,
     marginBottom: 4,
-    fontFamily: fontFamily
+    fontFamily,
   },
   subtitle: {
     fontSize: fontSizes.subtitle,
     color: theme.textSecondary,
-    fontFamily: fontFamily
+    fontFamily,
   },
   headerCenter: {
     flex: 1,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   headerRight: {
     flexDirection: 'row',
@@ -301,7 +343,7 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
   },
   searchButton: {
     padding: 8,
-    borderRadius: 8
+    borderRadius: 8,
   },
   profileButton: {
     padding: 4,
@@ -314,7 +356,7 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
   },
   menuButton: {
     padding: 8,
-    borderRadius: 8
+    borderRadius: 8,
   },
   floatingAddButton: {
     position: 'absolute',
@@ -332,7 +374,7 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 2,
-    elevation: 3
+    elevation: 3,
   },
   listContent: {
     paddingTop: spacing.card,
@@ -348,19 +390,19 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32
+    paddingHorizontal: 32,
   },
   emptyText: {
     fontSize: 20,
     fontWeight: '500',
     color: theme.textSecondary,
     marginTop: 16,
-    marginBottom: 8
+    marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 16,
     color: theme.textLight,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -373,9 +415,13 @@ const createStyles = (theme, fontSizes, fontFamily, spacing, settings, isDesktop
     borderWidth: 1,
     borderColor: theme.border,
   },
+  glassSearchContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
+    overflow: 'hidden',
+  },
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 16
-  }
+    fontSize: 16,
+  },
 });

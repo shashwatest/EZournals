@@ -11,6 +11,8 @@ import ConfirmDialog from '../components/ConfirmDialog';
 
 // SVG noise texture for matte feel on cards
 const noiseTexture = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`;
+const ENTRY_CACHE_KEY = 'journal_entries';
+const ACTIVE_CACHE_USER_KEY = 'active_local_user_id';
 
 export default function HomePage() {
   const { theme, currentTheme } = useTheme();
@@ -23,8 +25,10 @@ export default function HomePage() {
   const [stats, setStats] = useState({ totalEntries: 0, totalWords: 0 });
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const isMatteCardTheme = currentTheme === 'matteBlack' || currentTheme === 'matteWhite';
+  const isGlassTheme = currentTheme === 'glassmorphism';
 
   useEffect(() => {
+    hydrateFromLocalCache();
     loadEntries();
   }, [user]);
 
@@ -43,9 +47,12 @@ export default function HomePage() {
       }));
       
       setEntries(entriesData);
+      localStorage.setItem(ENTRY_CACHE_KEY, JSON.stringify(entriesData));
+      localStorage.setItem(ACTIVE_CACHE_USER_KEY, user.uid);
       
       const totalWords = entriesData.reduce((sum, entry) => sum + countWords(entry.content), 0);
       setStats({ totalEntries: entriesData.length, totalWords });
+      setLoading(false);
     }, (error) => {
       if (error.code !== 'permission-denied') {
         console.error('Entries listener error:', error);
@@ -71,6 +78,8 @@ export default function HomePage() {
       }));
       
       setEntries(entriesData);
+      localStorage.setItem(ENTRY_CACHE_KEY, JSON.stringify(entriesData));
+      localStorage.setItem(ACTIVE_CACHE_USER_KEY, user.uid);
       
       const totalWords = entriesData.reduce((sum, entry) => sum + countWords(entry.content), 0);
       setStats({ totalEntries: entriesData.length, totalWords });
@@ -78,6 +87,45 @@ export default function HomePage() {
       console.error('Error loading entries:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const hydrateFromLocalCache = () => {
+    if (!user) {
+      setEntries([]);
+      setStats({ totalEntries: 0, totalWords: 0 });
+      setLoading(false);
+      return;
+    }
+
+    const cachedUserId = localStorage.getItem(ACTIVE_CACHE_USER_KEY);
+    const cachedEntriesJson = localStorage.getItem(ENTRY_CACHE_KEY);
+
+    if (cachedUserId && cachedUserId !== user.uid) {
+      localStorage.removeItem(ENTRY_CACHE_KEY);
+      return;
+    }
+
+    if (!cachedEntriesJson) {
+      return;
+    }
+
+    try {
+      const cachedEntries = JSON.parse(cachedEntriesJson);
+      if (!Array.isArray(cachedEntries)) {
+        return;
+      }
+
+      setEntries(cachedEntries);
+      const totalWords = cachedEntries.reduce((sum, entry) => sum + countWords(entry.content), 0);
+      setStats({ totalEntries: cachedEntries.length, totalWords });
+      setLoading(false);
+
+      if (!cachedUserId) {
+        localStorage.setItem(ACTIVE_CACHE_USER_KEY, user.uid);
+      }
+    } catch (error) {
+      console.error('Error hydrating cached entries:', error);
     }
   };
 
@@ -115,9 +163,15 @@ export default function HomePage() {
       backgroundColor: theme.background,
     },
     header: {
+      position: 'sticky',
+      top: 0,
+      zIndex: 10,
       padding: '24px 32px',
       borderBottom: `1px solid ${theme.border}`,
-      backgroundColor: theme.surface,
+      backgroundColor: isGlassTheme ? 'rgba(6, 6, 6, 0.28)' : theme.surface,
+      backdropFilter: isGlassTheme ? 'blur(34px) saturate(145%)' : 'none',
+      WebkitBackdropFilter: isGlassTheme ? 'blur(34px) saturate(145%)' : 'none',
+      boxShadow: isGlassTheme ? '0 18px 42px rgba(0, 0, 0, 0.18)' : 'none',
     },
     headerTop: {
       display: 'flex',
@@ -136,12 +190,16 @@ export default function HomePage() {
       color: theme.textSecondary,
     },
     newButton: {
+      position: 'fixed',
+      right: '32px',
+      bottom: '32px',
+      zIndex: 20,
       display: 'flex',
       alignItems: 'center',
       gap: '0',
       justifyContent: 'center',
-      padding: '12px',
-      borderRadius: '10px',
+      padding: '16px',
+      borderRadius: '18px',
       border: `1px solid ${theme.border}`,
       backgroundColor: theme.buttonBg || theme.surface,
       color: theme.accent,
@@ -150,8 +208,8 @@ export default function HomePage() {
       cursor: 'pointer',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       boxShadow: 'none',
-      width: '44px',
-      height: '44px',
+      width: '64px',
+      height: '64px',
     },
     searchBar: {
       position: 'relative',
@@ -169,7 +227,7 @@ export default function HomePage() {
       padding: '12px 16px 12px 48px',
       borderRadius: '12px',
       border: `1px solid ${theme.border}`,
-      backgroundColor: theme.background,
+      backgroundColor: isGlassTheme ? 'rgba(6, 6, 6, 0.56)' : theme.background,
       color: theme.text,
       fontSize: '15px',
       outline: 'none',
@@ -189,12 +247,14 @@ export default function HomePage() {
     card: {
       padding: '24px',
       borderRadius: isMatteCardTheme ? '14px' : '16px',
-      backgroundColor: theme.surface,
+      backgroundColor: isGlassTheme ? 'rgba(5, 5, 5, 0.72)' : theme.surface,
       ...(isMatteCardTheme ? { backgroundImage: noiseTexture, backgroundSize: '128px 128px' } : {}),
       border: `1px solid ${theme.border}`,
       cursor: 'pointer',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: isMatteCardTheme ? '0 3px 6px rgba(0, 0, 0, 0.4)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
+      backdropFilter: isGlassTheme ? 'blur(20px) saturate(125%)' : 'none',
+      WebkitBackdropFilter: isGlassTheme ? 'blur(20px) saturate(125%)' : 'none',
+      boxShadow: isMatteCardTheme ? '0 3px 6px rgba(0, 0, 0, 0.4)' : isGlassTheme ? '0 24px 56px rgba(0, 0, 0, 0.34)' : '0 2px 8px rgba(0, 0, 0, 0.05)',
     },
     cardDate: {
       fontSize: '14px',
@@ -269,10 +329,18 @@ export default function HomePage() {
   // Hover behavior adapts to theme
   const cardHoverIn = isMatteCardTheme
     ? (e) => { e.currentTarget.style.transform = 'translateY(-1.5px) scale(1.008)'; e.currentTarget.style.boxShadow = '0 5px 10px rgba(0, 0, 0, 0.5)'; }
-    : (e) => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)'; e.currentTarget.style.backgroundColor = theme.surfaceHover || theme.surface; };
+    : (e) => {
+        e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+        e.currentTarget.style.boxShadow = isGlassTheme ? '0 28px 64px rgba(0, 0, 0, 0.4)' : '0 8px 24px rgba(0, 0, 0, 0.12)';
+        e.currentTarget.style.backgroundColor = isGlassTheme ? 'rgba(10, 10, 10, 0.8)' : (theme.surfaceHover || theme.surface);
+      };
   const cardHoverOut = isMatteCardTheme
     ? (e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 3px 6px rgba(0, 0, 0, 0.4)'; }
-    : (e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)'; e.currentTarget.style.backgroundColor = theme.surface; };
+    : (e) => {
+        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+        e.currentTarget.style.boxShadow = isGlassTheme ? '0 24px 56px rgba(0, 0, 0, 0.34)' : '0 2px 8px rgba(0, 0, 0, 0.05)';
+        e.currentTarget.style.backgroundColor = isGlassTheme ? 'rgba(5, 5, 5, 0.72)' : theme.surface;
+      };
   const btnHoverIn = (e) => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.backgroundColor = theme.buttonHoverBg || theme.buttonBg || theme.surfaceHover || theme.surface; };
   const btnHoverOut = (e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = theme.buttonBg || theme.surface; };
 
@@ -286,15 +354,6 @@ export default function HomePage() {
               {stats.totalEntries} {stats.totalEntries === 1 ? 'entry' : 'entries'} · {stats.totalWords} words
             </p>
           </div>
-          <button
-            style={styles.newButton}
-            onClick={() => navigate('/add')}
-            title="New Entry"
-            onMouseEnter={btnHoverIn}
-            onMouseLeave={btnHoverOut}
-          >
-            <Plus size={20} />
-          </button>
         </div>
         
         <div style={styles.searchBar}>
@@ -388,6 +447,15 @@ export default function HomePage() {
         onConfirm={() => handleDelete(deleteCandidate.id, deleteCandidate)}
         theme={theme}
       />
+      <button
+        style={styles.newButton}
+        onClick={() => navigate('/add')}
+        title="New Entry"
+        onMouseEnter={btnHoverIn}
+        onMouseLeave={btnHoverOut}
+      >
+        <Plus size={26} />
+      </button>
     </div>
   );
 }

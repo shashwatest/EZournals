@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { ArrowLeft, Sparkles, Info, Eye, EyeOff, Save, Zap, Check, Shield, FileText, BarChart3 } from 'lucide-react';
+import { showAlert } from '../utils/appAlert';
 
 const AI_SETTINGS_KEY = 'ai_settings';
 
@@ -29,6 +30,7 @@ export default function AISettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testMessage, setTestMessage] = useState('');
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadSettings();
@@ -51,13 +53,13 @@ export default function AISettingsPage() {
       setSettings(newSettings);
     } catch (error) {
       console.error('Error saving AI settings:', error);
-      alert('Failed to save settings');
+      showAlert({ title: 'Error', message: 'Failed to save settings', confirmTone: 'danger' });
     }
   };
 
   const toggleAI = (value) => {
     if (value && !settings.apiKey.trim()) {
-      alert('Please enter your Gemini API key before enabling AI features.');
+      showAlert({ title: 'API Key Required', message: 'Please enter your Gemini API key before enabling AI features.' });
       return;
     }
     const newSettings = { ...settings, enabled: value };
@@ -68,9 +70,9 @@ export default function AISettingsPage() {
     setSettings({ ...settings, apiKey: key });
   };
 
-  const handleSaveApiKey = () => {
+  const handleSaveApiKey = async () => {
     saveSettings(settings);
-    alert('API key saved successfully');
+    await showAlert({ title: 'Success', message: 'API key saved successfully' });
   };
 
   const selectModel = (modelId) => {
@@ -91,7 +93,7 @@ export default function AISettingsPage() {
 
   const handleTestConnection = async () => {
     if (!settings.apiKey.trim()) {
-      alert('Please enter your Gemini API key first.');
+      await showAlert({ title: 'API Key Required', message: 'Please enter your Gemini API key first.' });
       return;
     }
 
@@ -224,6 +226,7 @@ export default function AISettingsPage() {
       transition: 'transform 0.2s',
     },
     toggleThumbActive: {
+      backgroundColor: accentText,
       transform: 'translateX(20px)',
     },
     infoCard: {
@@ -314,7 +317,7 @@ export default function AISettingsPage() {
     },
     buttonPrimary: {
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
     },
     testMessage: {
       marginTop: '12px',

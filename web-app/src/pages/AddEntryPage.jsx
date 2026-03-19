@@ -9,6 +9,8 @@ import { uploadImage, uploadAudio } from '../utils/mediaUpload';
 import { getPredefinedTags } from '../utils/entryUtils';
 import { isAIEnabled, getAISettings } from '../utils/aiSettings';
 import { detectMoodTags } from '../utils/geminiService';
+import { showAlert } from '../utils/appAlert';
+import { getMoodTags } from '../utils/moodTags';
 
 export default function AddEntryPage() {
   const { theme } = useTheme();
@@ -30,11 +32,12 @@ export default function AddEntryPage() {
   const [audioChunks, setAudioChunks] = useState([]);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [detectingMood, setDetectingMood] = useState(false);
-
-  const predefinedTags = getPredefinedTags();
+  const [predefinedTags, setPredefinedTags] = useState([]);
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     checkAIStatus();
+    getMoodTags().then(setPredefinedTags);
   }, []);
 
   const checkAIStatus = () => {
@@ -49,7 +52,7 @@ export default function AddEntryPage() {
 
   const handleDetectMood = async () => {
     if (!content.trim()) {
-      alert('Please write something before detecting mood');
+      await showAlert({ title: 'No Content', message: 'Please write something before detecting mood' });
       return;
     }
 
@@ -66,10 +69,10 @@ export default function AddEntryPage() {
       });
       
       setTags(newTags);
-      alert(`Mood detected! Added tags: ${suggestedTags.join(', ')}`);
+      await showAlert({ title: 'Mood Detected', message: `Added tags: ${suggestedTags.join(', ')}` });
     } catch (error) {
       console.error('Mood detection error:', error);
-      alert(`Mood Detection Failed: ${error.message}`);
+      await showAlert({ title: 'Mood Detection Failed', message: error.message, confirmTone: 'danger' });
     } finally {
       setDetectingMood(false);
     }
@@ -122,7 +125,7 @@ export default function AddEntryPage() {
 
   const getLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      showAlert({ title: 'Location Unavailable', message: 'Geolocation is not supported by your browser' });
       return;
     }
 
@@ -137,7 +140,7 @@ export default function AddEntryPage() {
       },
       (error) => {
         console.error('Error getting location:', error);
-        alert('Failed to get location');
+        showAlert({ title: 'Location Failed', message: 'Failed to get location', confirmTone: 'danger' });
         setGettingLocation(false);
       }
     );
@@ -169,7 +172,7 @@ export default function AddEntryPage() {
       setAudioChunks(chunks);
     } catch (error) {
       console.error('Error starting recording:', error);
-      alert('Failed to start recording. Please check microphone permissions.');
+      showAlert({ title: 'Recording Failed', message: 'Failed to start recording. Please check microphone permissions.', confirmTone: 'danger' });
     }
   };
 
@@ -188,7 +191,7 @@ export default function AddEntryPage() {
 
   const handleSave = async () => {
     if (!content.trim()) {
-      alert('Please write something before saving');
+      await showAlert({ title: 'Empty Entry', message: 'Please write something before saving' });
       return;
     }
     
@@ -203,7 +206,7 @@ export default function AddEntryPage() {
           imageUrl = await uploadImage(imageFile);
         } catch (error) {
           console.error('Error uploading image:', error);
-          alert('Warning: Failed to upload image, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload image, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -213,7 +216,7 @@ export default function AddEntryPage() {
           audioUrl = await uploadAudio(audioFile);
         } catch (error) {
           console.error('Error uploading audio:', error);
-          alert('Warning: Failed to upload audio, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload audio, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -243,7 +246,7 @@ export default function AddEntryPage() {
       navigate('/');
     } catch (error) {
       console.error('Error saving entry:', error);
-      alert('Failed to save entry: ' + error.message);
+      await showAlert({ title: 'Save Failed', message: 'Failed to save entry: ' + error.message, confirmTone: 'danger' });
     } finally {
       setSaving(false);
     }
@@ -294,7 +297,7 @@ export default function AddEntryPage() {
       borderRadius: '12px',
       border: 'none',
       backgroundColor: content.trim() ? theme.accent : theme.border,
-      color: '#fff',
+      color: accentText,
       fontSize: '16px',
       fontWeight: '600',
       cursor: content.trim() ? 'pointer' : 'not-allowed',
@@ -353,7 +356,7 @@ export default function AddEntryPage() {
     },
     toolButtonActive: {
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       borderColor: theme.accent,
     },
     metaCard: {
@@ -581,7 +584,7 @@ export default function AddEntryPage() {
                   style={{
                     ...styles.presetTag,
                     backgroundColor: tags.includes(tag.name) ? tag.color : `${tag.color}30`,
-                    color: tags.includes(tag.name) ? '#fff' : tag.color,
+                    color: tags.includes(tag.name) ? accentText : tag.color,
                     borderColor: tag.color,
                   }}
                   onClick={() => addPresetTag(tag.name)}
@@ -625,7 +628,7 @@ export default function AddEntryPage() {
                   marginTop: '12px',
                   marginBottom: '20px',
                   backgroundColor: theme.accent,
-                  color: '#fff',
+                  color: accentText,
                   border: 'none',
                   borderRadius: '8px',
                   fontSize: '14px',

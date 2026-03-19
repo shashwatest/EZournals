@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function TimeRangeButton({ onInsertTimeRange, value, onChangeText }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [startPosition, setStartPosition] = useState(0);
@@ -44,7 +45,7 @@ export default function TimeRangeButton({ onInsertTimeRange, value, onChangeText
       <Ionicons 
         name={isTracking ? "stop-outline" : "timer-outline"} 
         size={16} 
-        color={isTracking ? theme.surface : theme.text} 
+        color={isTracking ? accentText : theme.text} 
       />
       <Text style={[styles.buttonText, isTracking && styles.activeButtonText]}>
         {isTracking ? 'Stop' : 'Range'}
@@ -74,6 +75,6 @@ const createStyles = (theme) => StyleSheet.create({
     marginLeft: 4
   },
   activeButtonText: {
-    color: theme.surface
+    color: theme.onAccentText || '#fff'
   }
 });

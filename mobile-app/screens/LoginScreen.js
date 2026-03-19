@@ -10,6 +10,7 @@ const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 
 export default function LoginScreen({ navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +24,6 @@ export default function LoginScreen({ navigation }) {
       const { data } = await GoogleSignin.signIn();
       const credential = GoogleAuthProvider.credential(data.idToken);
       await signInWithCredential(auth, credential);
-      navigation.replace('Home');
     } catch (e) {
       setErrors({ general: e.message });
     }
@@ -44,7 +44,6 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      navigation.replace('Home');
     } catch (err) {
       setErrors({ general: err.message });
     } finally {
@@ -104,7 +103,7 @@ export default function LoginScreen({ navigation }) {
         {errors.general ? <Text style={[styles.generalError, { color: theme.danger }]}>{errors.general}</Text> : null}
 
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={handleLogin} disabled={loading}>
-          <Text style={[styles.buttonText, { color: '#fff' }]}>{loading ? 'Signing in...' : 'Sign In'}</Text>
+          <Text style={[styles.buttonText, { color: accentText }]}>{loading ? 'Signing in...' : 'Sign In'}</Text>
         </TouchableOpacity>
 
         <View style={styles.dividerRow}>

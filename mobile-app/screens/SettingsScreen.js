@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getUserTags, saveUserTag, deleteUserTag } from '../../backend/utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
@@ -7,11 +7,18 @@ import { themes } from '../styles/theme';
 import { fullSync, getLastSyncTime } from '../../backend/firebase/cloudStorage';
 import { auth } from '../../backend/firebase/config';
 import { formatSyncTime } from '../utils/entryUtils';
+import { showAlert, showConfirm } from '../utils/appAlert';
+import { getMoodTags, addMoodTag, updateMoodTag, deleteMoodTag as removeMoodTag } from '../../backend/utils/moodTags';
 
 export default function SettingsScreen({ navigation }) {
   const { theme, currentTheme, customThemes, changeTheme, deleteCustomTheme, isLoading } = useTheme();
+  const accentText = theme?.onAccentText || '#fff';
   const [userTags, setUserTags] = useState([]);
   const [newTag, setNewTag] = useState('');
+  const [moodTags, setMoodTags] = useState([]);
+  const [newMoodTag, setNewMoodTag] = useState('');
+  const [editingMoodTag, setEditingMoodTag] = useState(null);
+  const [editingMoodName, setEditingMoodName] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
 
@@ -19,6 +26,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       const tags = await getUserTags();
       setUserTags(tags);
+      setMoodTags(await getMoodTags());
       const syncTime = await getLastSyncTime();
       setLastSync(syncTime);
     } catch (error) {
@@ -32,7 +40,7 @@ export default function SettingsScreen({ navigation }) {
 
   const handleSync = async () => {
     if (!auth.currentUser) {
-      Alert.alert('Not Logged In', 'Please log in to sync your data');
+      await showAlert({ title: 'Not Logged In', message: 'Please log in to sync your data' });
       return;
     }
 
@@ -41,10 +49,10 @@ export default function SettingsScreen({ navigation }) {
       await fullSync();
       const syncTime = await getLastSyncTime();
       setLastSync(syncTime);
-      Alert.alert('Success', 'Your data has been synced successfully');
+      await showAlert({ title: 'Success', message: 'Your data has been synced successfully' });
     } catch (error) {
       console.error('Sync error:', error);
-      Alert.alert('Sync Failed', error.message || 'Failed to sync data');
+      await showAlert({ title: 'Sync Failed', message: error.message || 'Failed to sync data', confirmTone: 'danger' });
     } finally {
       setSyncing(false);
     }
@@ -65,22 +73,60 @@ export default function SettingsScreen({ navigation }) {
       setUserTags([...userTags, tag]);
       setNewTag('');
     } else {
-      Alert.alert('Invalid Tag', 'Tag already exists or is empty');
+      await showAlert({ title: 'Invalid Tag', message: 'Tag already exists or is empty' });
     }
   };
 
   const deleteTag = async (tagToDelete) => {
-    Alert.alert(
-      'Delete Tag',
-      `Are you sure you want to delete "${tagToDelete}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: async () => {
-          await deleteUserTag(tagToDelete);
-          setUserTags(userTags.filter(tag => tag !== tagToDelete));
-        }}
-      ]
-    );
+    const confirmed = await showConfirm({
+      title: 'Delete Tag',
+      message: `Are you sure you want to delete "${tagToDelete}"?`,
+      confirmLabel: 'Delete',
+      confirmTone: 'danger',
+    });
+    if (confirmed) {
+      await deleteUserTag(tagToDelete);
+      setUserTags(userTags.filter(tag => tag !== tagToDelete));
+    }
+  };
+
+  const addNewMoodTag = async () => {
+    try {
+      const updatedTags = await addMoodTag(newMoodTag);
+      setMoodTags(updatedTags);
+      setNewMoodTag('');
+    } catch (error) {
+      await showAlert({ title: 'Invalid Mood Tag', message: error.message });
+    }
+  };
+
+  const saveMoodTagEdit = async () => {
+    if (!editingMoodTag) return;
+    try {
+      const updatedTags = await updateMoodTag(editingMoodTag, editingMoodName);
+      setMoodTags(updatedTags);
+      setEditingMoodTag(null);
+      setEditingMoodName('');
+    } catch (error) {
+      await showAlert({ title: 'Invalid Mood Tag', message: error.message });
+    }
+  };
+
+  const deleteMoodTag = async (tagToDelete) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Mood Tag',
+      message: `Delete "${tagToDelete}" and remove it from existing entries?`,
+      confirmLabel: 'Delete',
+      confirmTone: 'danger',
+    });
+    if (!confirmed) return;
+
+    const updatedTags = await removeMoodTag(tagToDelete);
+    setMoodTags(updatedTags);
+    if (editingMoodTag === tagToDelete) {
+      setEditingMoodTag(null);
+      setEditingMoodName('');
+    }
   };
 
   const editCustomTheme = (themeData) => {
@@ -117,11 +163,11 @@ export default function SettingsScreen({ navigation }) {
             disabled={syncing}
           >
             {syncing ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={accentText} />
             ) : (
-              <Ionicons name="cloud-upload-outline" size={24} color="#fff" />
+              <Ionicons name="cloud-upload-outline" size={24} color={accentText} />
             )}
-            <Text style={styles.syncButtonText}>
+            <Text style={[styles.syncButtonText, { color: accentText }]}>
               {syncing ? 'Syncing...' : 'Sync Now'}
             </Text>
           </TouchableOpacity>
@@ -151,7 +197,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={[styles.appearanceOptionText, { color: theme.text }]}>Cloud Sync Settings</Text>
             <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
-          
+
             {themeOptions.map(option => (
               <TouchableOpacity
                 key={option.name}
@@ -200,6 +246,64 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Mood Tags</Text>
+          <View style={styles.tagInputContainer}>
+            <TextInput
+              style={[styles.tagInput, { borderColor: theme.border, color: theme.text }]}
+              placeholder="Create mood tag"
+              placeholderTextColor={theme.textLight}
+              value={newMoodTag}
+              onChangeText={setNewMoodTag}
+              onSubmitEditing={addNewMoodTag}
+            />
+            <TouchableOpacity style={[styles.addTagButton, { backgroundColor: theme.accent }]} onPress={addNewMoodTag}>
+              <Ionicons name="add" size={20} color={accentText} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.tagsList}>
+            <Text style={[styles.tagsListTitle, { color: theme.textSecondary }]}>Mood Tags:</Text>
+            <View style={styles.tagRows}>
+              {moodTags.map((tag) => (
+                <View key={tag.name} style={[styles.tagRow, { borderColor: theme.border }]}>
+                  <View style={[styles.themeColor, { backgroundColor: tag.color, marginRight: 12 }]} />
+                  {editingMoodTag === tag.name ? (
+                    <TextInput
+                      style={[styles.moodEditInput, { borderColor: theme.border, color: theme.text }]}
+                      value={editingMoodName}
+                      onChangeText={setEditingMoodName}
+                      autoFocus
+                      onSubmitEditing={saveMoodTagEdit}
+                    />
+                  ) : (
+                    <Text style={[styles.themeLabel, { color: theme.text }]}>{tag.name}</Text>
+                  )}
+                  {editingMoodTag === tag.name ? (
+                    <>
+                      <TouchableOpacity onPress={saveMoodTagEdit} style={styles.actionButton}>
+                        <Ionicons name="checkmark" size={18} color={theme.accent} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setEditingMoodTag(null); setEditingMoodName(''); }} style={styles.actionButton}>
+                        <Ionicons name="close" size={18} color={theme.textSecondary} />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity onPress={() => { setEditingMoodTag(tag.name); setEditingMoodName(tag.name); }} style={styles.actionButton}>
+                        <Ionicons name="pencil" size={16} color={theme.textSecondary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteMoodTag(tag.name)} style={styles.actionButton}>
+                        <Ionicons name="trash" size={16} color={theme.danger} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Custom Tags</Text>
           <View style={styles.tagInputContainer}>
             <TextInput
@@ -211,7 +315,7 @@ export default function SettingsScreen({ navigation }) {
               onSubmitEditing={addNewTag}
             />
             <TouchableOpacity style={[styles.addTagButton, { backgroundColor: theme.accent }]} onPress={addNewTag}>
-              <Ionicons name="add" size={20} color={theme.surface} />
+              <Ionicons name="add" size={20} color={accentText} />
             </TouchableOpacity>
           </View>
           
@@ -271,7 +375,7 @@ const styles = StyleSheet.create({
   section: {
     margin: 16,
     borderRadius: 12,
-    padding: 24,
+    padding: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -355,6 +459,25 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 4
   },
+  tagRows: {
+    gap: 8,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+  },
+  moodEditInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -422,7 +545,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   syncButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

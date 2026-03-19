@@ -6,6 +6,7 @@ export default function ConfirmDialog({
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
+  hideCancel = false,
   confirmTone = 'accent',
   onConfirm,
   onCancel,
@@ -13,15 +14,18 @@ export default function ConfirmDialog({
 }) {
   if (!open) return null;
 
+  const isGlassTheme = theme.id === 'glassmorphism';
   const confirmColor = confirmTone === 'danger' ? theme.danger : theme.accent;
 
   const styles = {
     overlay: {
       position: 'fixed',
       inset: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.72)',
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)',
+      background: isGlassTheme
+        ? 'radial-gradient(circle at center, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.14) 24%, rgba(0, 0, 0, 0.38) 100%)'
+        : 'rgba(0, 0, 0, 0.42)',
+      backdropFilter: isGlassTheme ? 'blur(5px) saturate(135%)' : 'none',
+      WebkitBackdropFilter: isGlassTheme ? 'blur(5px) saturate(135%)' : 'none',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -31,13 +35,13 @@ export default function ConfirmDialog({
     dialog: {
       width: '100%',
       maxWidth: '420px',
-      backgroundColor: theme.surface,
+      backgroundColor: isGlassTheme ? 'rgba(0, 0, 0, 0.16)' : theme.surface,
       border: `1px solid ${theme.border}`,
       borderRadius: '16px',
-      boxShadow: '0 24px 80px rgba(0, 0, 0, 0.35)',
+      boxShadow: isGlassTheme ? '0 24px 80px rgba(0, 0, 0, 0.35)' : '0 18px 48px rgba(0, 0, 0, 0.22)',
       padding: '24px',
-      backdropFilter: 'blur(30px)',
-      WebkitBackdropFilter: 'blur(30px)',
+      backdropFilter: isGlassTheme ? 'blur(5px) saturate(150%)' : 'none',
+      WebkitBackdropFilter: isGlassTheme ? 'blur(5px) saturate(150%)' : 'none',
     },
     title: {
       margin: 0,
@@ -70,7 +74,8 @@ export default function ConfirmDialog({
     },
     confirmButton: {
       borderColor: confirmColor,
-      color: confirmTone === 'danger' ? theme.danger : theme.accent,
+      color: confirmColor,
+      backgroundColor: 'transparent',
     },
   };
 
@@ -80,9 +85,11 @@ export default function ConfirmDialog({
         <h3 style={styles.title}>{title}</h3>
         <p style={styles.message}>{message}</p>
         <div style={styles.actions}>
-          <button style={styles.button} onClick={onCancel}>
-            {cancelLabel}
-          </button>
+          {!hideCancel && (
+            <button style={styles.button} onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          )}
           <button
             style={{ ...styles.button, ...styles.confirmButton }}
             onClick={onConfirm}

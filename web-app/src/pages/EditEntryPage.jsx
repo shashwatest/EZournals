@@ -4,9 +4,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Save, Tag as TagIcon, Image as ImageIcon, MapPin, Mic, Clock, X } from 'lucide-react';
+import { ArrowLeft, Save, Tag as TagIcon, Image as ImageIcon, MapPin, Mic, Clock, X, Sparkles, Loader } from 'lucide-react';
 import { uploadImage, uploadAudio } from '../utils/mediaUpload';
 import { getPredefinedTags } from '../utils/entryUtils';
+import { isAIEnabled, getAISettings } from '../utils/aiSettings';
+import { detectMoodTags } from '../utils/geminiService';
+import { showAlert } from '../utils/appAlert';
+import { getMoodTags } from '../utils/moodTags';
 
 export default function EditEntryPage() {
   const { theme } = useTheme();
@@ -28,12 +32,26 @@ export default function EditEntryPage() {
   const [existingAudioUrl, setExistingAudioUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-
-  const predefinedTags = getPredefinedTags();
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [detectingMood, setDetectingMood] = useState(false);
+  const [predefinedTags, setPredefinedTags] = useState([]);
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadEntry();
+    checkAIStatus();
+    getMoodTags().then(setPredefinedTags);
   }, [id, user]);
+
+  const checkAIStatus = () => {
+    try {
+      const enabled = isAIEnabled();
+      const settings = getAISettings();
+      setAiEnabled(enabled && settings.features.moodDetection);
+    } catch (error) {
+      console.error('Error checking AI status:', error);
+    }
+  };
 
   const loadEntry = async () => {
     if (!user || !id) return;
@@ -58,7 +76,7 @@ export default function EditEntryPage() {
 
   const handleSave = async () => {
     if (!content.trim()) {
-      alert('Please enter some content');
+      await showAlert({ title: 'Empty Entry', message: 'Please enter some content' });
       return;
     }
 
@@ -73,7 +91,7 @@ export default function EditEntryPage() {
           imageUrl = await uploadImage(imageFile);
         } catch (error) {
           console.error('Error uploading image:', error);
-          alert('Warning: Failed to upload image, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload image, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -83,7 +101,7 @@ export default function EditEntryPage() {
           audioUrl = await uploadAudio(audioFile);
         } catch (error) {
           console.error('Error uploading audio:', error);
-          alert('Warning: Failed to upload audio, but entry will be saved');
+          await showAlert({ title: 'Warning', message: 'Failed to upload audio, but entry will be saved', confirmTone: 'danger' });
         }
       }
 
@@ -99,7 +117,7 @@ export default function EditEntryPage() {
       navigate(`/entry/${id}`);
     } catch (error) {
       console.error('Error updating entry:', error);
-      alert('Failed to update entry');
+      await showAlert({ title: 'Update Failed', message: 'Failed to update entry', confirmTone: 'danger' });
     } finally {
       setSaving(false);
     }
@@ -119,6 +137,31 @@ export default function EditEntryPage() {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
       setTagInput('');
+    }
+  };
+
+  const handleDetectMood = async () => {
+    if (!content.trim()) {
+      await showAlert({ title: 'No Content', message: 'Please write something before detecting mood' });
+      return;
+    }
+
+    setDetectingMood(true);
+    try {
+      const suggestedTags = await detectMoodTags(content);
+      const newTags = [...tags];
+      suggestedTags.forEach(tag => {
+        if (!newTags.includes(tag)) {
+          newTags.push(tag);
+        }
+      });
+      setTags(newTags);
+      await showAlert({ title: 'Mood Detected', message: `Added tags: ${suggestedTags.join(', ')}` });
+    } catch (error) {
+      console.error('Mood detection error:', error);
+      await showAlert({ title: 'Mood Detection Failed', message: error.message, confirmTone: 'danger' });
+    } finally {
+      setDetectingMood(false);
     }
   };
 
@@ -142,7 +185,7 @@ export default function EditEntryPage() {
 
   const getLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      showAlert({ title: 'Location Unavailable', message: 'Geolocation is not supported by your browser' });
       return;
     }
 
@@ -157,7 +200,7 @@ export default function EditEntryPage() {
       },
       (error) => {
         console.error('Error getting location:', error);
-        alert('Failed to get location');
+        showAlert({ title: 'Location Failed', message: 'Failed to get location', confirmTone: 'danger' });
         setGettingLocation(false);
       }
     );
@@ -188,7 +231,7 @@ export default function EditEntryPage() {
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting recording:', error);
-      alert('Failed to start recording. Please check microphone permissions.');
+      showAlert({ title: 'Recording Failed', message: 'Failed to start recording. Please check microphone permissions.', confirmTone: 'danger' });
     }
   };
 
@@ -258,7 +301,7 @@ export default function EditEntryPage() {
       borderRadius: '8px',
       border: 'none',
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       cursor: 'pointer',
       fontSize: '14px',
       fontWeight: '500',
@@ -340,7 +383,7 @@ export default function EditEntryPage() {
     tagButtonActive: {
       backgroundColor: theme.accent,
       borderColor: theme.accent,
-      color: '#fff',
+      color: accentText,
     },
     customTagInput: {
       display: 'flex',
@@ -361,7 +404,7 @@ export default function EditEntryPage() {
       borderRadius: '8px',
       border: 'none',
       backgroundColor: theme.accent,
-      color: '#fff',
+      color: accentText,
       cursor: 'pointer',
       fontSize: '14px',
     },
@@ -441,7 +484,7 @@ export default function EditEntryPage() {
             <button
               style={{
                 ...styles.toolButton,
-                ...(isRecording ? { backgroundColor: theme.accent, color: '#fff' } : {}),
+                ...(isRecording ? { backgroundColor: theme.accent, color: accentText } : {}),
               }}
               onClick={isRecording ? stopRecording : startRecording}
               title={isRecording ? 'Stop Recording' : 'Record Audio'}
@@ -600,6 +643,36 @@ export default function EditEntryPage() {
                 Add
               </button>
             </div>
+
+            {aiEnabled && (
+              <button
+                style={{
+                  ...styles.addButton,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  marginTop: '12px',
+                  opacity: detectingMood ? 0.7 : 1,
+                  cursor: detectingMood ? 'not-allowed' : 'pointer',
+                }}
+                onClick={handleDetectMood}
+                disabled={detectingMood}
+              >
+                {detectingMood ? (
+                  <>
+                    <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    Detecting Mood...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    AI Detect Mood
+                  </>
+                )}
+              </button>
+            )}
 
             {tags.length > 0 && (
               <div style={styles.selectedTags}>

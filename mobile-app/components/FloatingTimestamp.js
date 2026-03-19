@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function FloatingTimestamp({ eventTime, onTimeChange, visible, onDismiss }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customTime, setCustomTime] = useState('');
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -185,7 +186,7 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 8
   },
   setButtonText: {
-    color: theme.surface,
+    color: theme.onAccentText || '#fff',
     fontSize: 14,
     fontWeight: '600'
   }

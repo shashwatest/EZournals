@@ -29,6 +29,7 @@ export default function CloudSettingsPage() {
     media: false,
     timeRange: true,
   });
+  const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
     loadSettings();
@@ -233,6 +234,7 @@ export default function CloudSettingsPage() {
       transition: 'transform 0.2s',
     },
     toggleThumbActive: {
+      backgroundColor: accentText,
       transform: 'translateX(20px)',
     },
     warningCard: {

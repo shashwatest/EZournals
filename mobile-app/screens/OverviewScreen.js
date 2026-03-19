@@ -5,11 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { getEntries } from '../../backend/utils/storage';
 import { getPredefinedTags, calculateStats, formatDate } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
+import { getMoodTags } from '../../backend/utils/moodTags';
 
 const { width } = Dimensions.get('window');
 
 export default function OverviewScreen({ navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [entries, setEntries] = useState([]);
   const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'year', 'custom'
   const [stats, setStats] = useState({});
@@ -25,6 +27,7 @@ export default function OverviewScreen({ navigation }) {
   }, [timeRange, customStartDate, customEndDate]);
 
   const loadData = async () => {
+    await getMoodTags();
     const data = await getEntries();
     setEntries(data);
     setStats(calculateStats(data, timeRange, customStartDate, customEndDate));
@@ -95,7 +98,7 @@ export default function OverviewScreen({ navigation }) {
                 <Text style={[
                   styles.timeRangeText,
                   { color: theme.text },
-                  timeRange === option.key && { color: theme.surface }
+                  timeRange === option.key && { color: accentText }
                 ]}>
                   {option.label}
                 </Text>

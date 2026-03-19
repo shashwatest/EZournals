@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible, onDismiss }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
@@ -68,7 +69,7 @@ export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible
         {!isTracking ? (
           <View style={styles.optionsContainer}>
             <TouchableOpacity style={styles.startButton} onPress={startTracking}>
-              <Ionicons name="play" size={20} color={theme.surface} />
+              <Ionicons name="play" size={20} color={accentText} />
               <Text style={styles.startButtonText}>Start Now</Text>
             </TouchableOpacity>
             
@@ -100,7 +101,7 @@ export default function TimeRangeTracker({ timeRange, onTimeRangeChange, visible
               <Text style={styles.ongoingText}>Status: Ongoing</Text>
             </View>
             <TouchableOpacity style={styles.stopButton} onPress={stopTracking}>
-              <Ionicons name="stop" size={20} color={theme.surface} />
+              <Ionicons name="stop" size={20} color={accentText} />
               <Text style={styles.stopButtonText}>Stop</Text>
             </TouchableOpacity>
           </View>
@@ -155,7 +156,7 @@ const createStyles = (theme) => StyleSheet.create({
     marginBottom: 16
   },
   startButtonText: {
-    color: theme.surface,
+    color: theme.onAccentText || '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8
@@ -203,7 +204,7 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 12
   },
   stopButtonText: {
-    color: theme.surface,
+    color: theme.onAccentText || '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8

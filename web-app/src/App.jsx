@@ -22,6 +22,8 @@ import UISettingsPage from './pages/UISettingsPage';
 import AISettingsPage from './pages/AISettingsPage';
 import InsightsPage from './pages/InsightsPage';
 import AppGlassBackground from './components/AppGlassBackground';
+import AppAlertHost from './components/AppAlertHost';
+import { getMoodTags } from './utils/moodTags';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -44,6 +46,12 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  React.useEffect(() => {
+    getMoodTags().catch((error) => {
+      console.error('Error hydrating mood tags:', error);
+    });
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -74,6 +82,7 @@ function App() {
                     <Route path="insights" element={<InsightsPage />} />
                   </Route>
                 </Routes>
+                <AppAlertHost />
               </div>
             </>
           </UISettingsProvider>

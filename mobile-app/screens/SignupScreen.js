@@ -11,6 +11,7 @@ const validatePassword = (pw) => pw.length >= 6;
 
 export default function SignupScreen({ navigation }) {
   const { theme } = useTheme();
+  const accentText = theme.onAccentText || '#fff';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,7 +28,6 @@ export default function SignupScreen({ navigation }) {
       const { data } = await GoogleSignin.signIn();
       const credential = GoogleAuthProvider.credential(data.idToken);
       await signInWithCredential(auth, credential);
-      navigation.replace('Home');
     } catch (e) {
       setErrors({ general: e.message });
     }
@@ -53,7 +53,6 @@ export default function SignupScreen({ navigation }) {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(cred.user, { displayName: name.trim() });
-      navigation.replace('Home');
     } catch (err) {
       setErrors({ general: err.message });
     } finally {
@@ -145,7 +144,7 @@ export default function SignupScreen({ navigation }) {
         {errors.general ? <Text style={[styles.generalError, { color: theme.danger }]}>{errors.general}</Text> : null}
 
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.accent }]} onPress={handleSignup} disabled={loading}>
-          <Text style={[styles.buttonText, { color: '#fff' }]}>{loading ? 'Creating account...' : 'Sign Up'}</Text>
+          <Text style={[styles.buttonText, { color: accentText }]}>{loading ? 'Creating account...' : 'Sign Up'}</Text>
         </TouchableOpacity>
 
         <View style={styles.dividerRow}>
