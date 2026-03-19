@@ -4,13 +4,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen, Trash2, Sparkles, TrendingUp } from 'lucide-react';
+import { Home, Calendar, BarChart3, Settings, LogOut, User, BookOpen, Trash2, Sparkles, TrendingUp, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 export default function DashboardLayout() {
   const { theme, currentTheme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
     localStorage.removeItem('theme');
@@ -43,13 +44,14 @@ export default function DashboardLayout() {
   const styles = {
     container: {
       display: 'flex',
-      height: '100vh',
+      height: '100dvh',
       backgroundColor: theme.background,
       color: theme.text,
       position: 'relative',
+      overflow: 'hidden',
     },
     sidebar: {
-      width: '260px',
+      width: sidebarCollapsed ? '88px' : '260px',
       backgroundColor: theme.surface,
       borderRight: `1px solid ${theme.border}`,
       display: 'flex',
@@ -58,6 +60,10 @@ export default function DashboardLayout() {
       backdropFilter: currentTheme === 'glassmorphism' ? 'blur(28px)' : 'none',
       WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(28px)' : 'none',
       boxShadow: currentTheme === 'glassmorphism' ? '0 24px 60px rgba(0, 0, 0, 0.32)' : 'none',
+      transition: 'width 0.24s ease',
+      overflow: 'hidden',
+      overflowX: 'hidden',
+      flexShrink: 0,
     },
     logo: {
       display: 'flex',
@@ -65,17 +71,35 @@ export default function DashboardLayout() {
       gap: '12px',
       padding: '0 12px',
       marginBottom: '32px',
+      justifyContent: sidebarCollapsed ? 'center' : 'space-between',
     },
     logoText: {
       fontSize: '24px',
       fontWeight: '700',
       color: theme.text,
     },
+    sidebarToggle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '36px',
+      height: '36px',
+      borderRadius: '10px',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.buttonBg || theme.background,
+      color: theme.textSecondary,
+      cursor: 'pointer',
+      flexShrink: 0,
+    },
     menu: {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
       gap: '4px',
+      minHeight: 0,
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      paddingBottom: '12px',
     },
     menuItem: {
       display: 'flex',
@@ -87,6 +111,7 @@ export default function DashboardLayout() {
       transition: 'all 0.2s',
       color: theme.textSecondary,
       textDecoration: 'none',
+      justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
     },
     menuItemActive: {
       backgroundColor: `${theme.accent}20`,
@@ -95,6 +120,9 @@ export default function DashboardLayout() {
     footer: {
       padding: '16px 12px',
       borderTop: `1px solid ${theme.border}`,
+      marginTop: 'auto',
+      flexShrink: 0,
+      backgroundColor: theme.surface,
     },
     userInfo: {
       display: 'flex',
@@ -123,11 +151,14 @@ export default function DashboardLayout() {
       background: 'transparent',
       width: '100%',
       fontSize: '14px',
+      justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
     },
     main: {
       flex: 1,
       overflow: 'auto',
       position: 'relative',
+      minWidth: 0,
+      minHeight: 0,
     },
     sectionDivider: {
       marginTop: '24px',
@@ -143,14 +174,55 @@ export default function DashboardLayout() {
       padding: '0 12px',
       marginBottom: '8px',
     },
+    collapsedToggle: {
+      position: 'sticky',
+      top: '20px',
+      left: '20px',
+      zIndex: 20,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '42px',
+      height: '42px',
+      margin: '20px 0 0 20px',
+      borderRadius: '12px',
+      border: `1px solid ${theme.border}`,
+      backgroundColor: theme.surface,
+      color: theme.text,
+      cursor: 'pointer',
+      backdropFilter: currentTheme === 'glassmorphism' ? 'blur(20px)' : 'none',
+      WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(20px)' : 'none',
+    },
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.sidebar}>
         <div style={styles.logo}>
-          <BookOpen size={32} color={theme.accent} />
-          <span style={styles.logoText}>EZournals</span>
+          {!sidebarCollapsed && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <BookOpen size={32} color={theme.accent} />
+                <span style={styles.logoText}>EZournals</span>
+              </div>
+              <button
+                style={styles.sidebarToggle}
+                onClick={() => setSidebarCollapsed(true)}
+                title="Collapse Sidebar"
+              >
+                <PanelLeftClose size={18} />
+              </button>
+            </>
+          )}
+          {sidebarCollapsed && (
+            <button
+              style={styles.sidebarToggle}
+              onClick={() => setSidebarCollapsed(false)}
+              title="Expand Sidebar"
+            >
+              <PanelLeftOpen size={18} />
+            </button>
+          )}
         </div>
 
         <div style={styles.menu}>
@@ -165,16 +237,19 @@ export default function DashboardLayout() {
                   ...(isActive ? styles.menuItemActive : {}),
                 }}
                 onClick={() => navigate(item.path)}
+                title={sidebarCollapsed ? item.label : undefined}
               >
                 <Icon size={20} />
-                <span>{item.label}</span>
+                {!sidebarCollapsed && <span>{item.label}</span>}
               </div>
             );
           })}
           
-          <div style={styles.sectionDivider}>
-            <div style={styles.sectionTitle}>AI INTEGRATION</div>
-          </div>
+          {!sidebarCollapsed && (
+            <div style={styles.sectionDivider}>
+              <div style={styles.sectionTitle}>AI INTEGRATION</div>
+            </div>
+          )}
           
           {aiItems.map((item) => {
             const Icon = item.icon;
@@ -188,16 +263,19 @@ export default function DashboardLayout() {
                   color: isActive ? theme.accent : theme.accent,
                 }}
                 onClick={() => navigate(item.path)}
+                title={sidebarCollapsed ? item.label : undefined}
               >
                 <Icon size={20} />
-                <span>{item.label}</span>
+                {!sidebarCollapsed && <span>{item.label}</span>}
               </div>
             );
           })}
           
-          <div style={styles.sectionDivider}>
-            <div style={styles.sectionTitle}>SYSTEM</div>
-          </div>
+          {!sidebarCollapsed && (
+            <div style={styles.sectionDivider}>
+              <div style={styles.sectionTitle}>SYSTEM</div>
+            </div>
+          )}
           
           {settingsItems.map((item) => {
             const Icon = item.icon;
@@ -210,23 +288,33 @@ export default function DashboardLayout() {
                   ...(isActive ? styles.menuItemActive : {}),
                 }}
                 onClick={() => navigate(item.path)}
+                title={sidebarCollapsed ? item.label : undefined}
               >
                 <Icon size={20} />
-                <span>{item.label}</span>
+                {!sidebarCollapsed && <span>{item.label}</span>}
               </div>
             );
           })}
         </div>
 
         <div style={styles.footer}>
-          <button style={styles.logoutBtn} onClick={handleLogout}>
+          <button style={styles.logoutBtn} onClick={handleLogout} title={sidebarCollapsed ? 'Logout' : undefined}>
             <LogOut size={16} />
-            <span>Logout</span>
+            {!sidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
       </div>
 
       <div style={styles.main}>
+        {sidebarCollapsed && (
+          <button
+            style={styles.collapsedToggle}
+            onClick={() => setSidebarCollapsed(false)}
+            title="Expand Sidebar"
+          >
+            <PanelLeftOpen size={18} />
+          </button>
+        )}
         <Outlet />
       </div>
     </div>

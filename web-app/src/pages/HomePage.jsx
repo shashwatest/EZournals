@@ -349,7 +349,7 @@ export default function HomePage() {
       <div style={styles.header}>
         <div style={styles.headerTop}>
           <div>
-            <h1 style={styles.title}>My Journal</h1>
+            <h1 style={styles.title}>EZournals</h1>
             <p style={styles.subtitle}>
               {stats.totalEntries} {stats.totalEntries === 1 ? 'entry' : 'entries'} · {stats.totalWords} words
             </p>
