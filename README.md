@@ -1,44 +1,31 @@
-# Journal Mobile App
+# EZournals - Digital Journal Application
 
-A simple React Native journal app built with Expo.
-
-## Features
-- Create new journal entries
-- View all entries with timestamps
-- Read full entry details
-- Delete entries
-- Local storage (entries saved on device)
-
-## Setup & Run
-
-1. Install dependencies:
-   ```
-   npm install
-   ```
-
-2. Install Expo CLI globally:
-   ```
-   npm install -g @expo/cli
-   ```
-
-3. Start the development server:
-   ```
-   npm start
-   ```
-
-4. Use Expo Go app on your phone to scan QR code, or run on simulator:
-   - For Android: `npm run android`
-   - For iOS: `npm run ios`
+Cross-platform journaling application with mobile and web interfaces.
 
 ## Project Structure
-- `App.js` - Main navigation setup
-- `screens/` - All app screens
-- `utils/storage.js` - Data persistence functions
 
-## Next Features to Add
-- Search entries
-- Edit existing entries
-- Categories/tags
-- Export entries
-- Dark mode
-- Entry photos
+```
+EZournals/
+├── mobile-app/    # React Native (iOS/Android)
+├── web-app/       # React Web (Desktop)
+└── backend/       # Shared Firebase & utilities
+```
+
+## Quick Start
+
+```bash
+# Install all dependencies
+npm run install:all
+
+# Run mobile app
+npm run mobile
+
+# Run web app
+npm run web
+```
+
+## Documentation
+
+- [Mobile App](mobile-app/README.md)
+- [Web App](web-app/README.md)
+- [Backend](backend/README.md)

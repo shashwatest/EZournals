@@ -1,0 +1,43 @@
+{
+  "name": "ezournals",
+  "version": "1.0.0",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.5",
+    "@expo/vector-icons": "^14.0.4",
+    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-community/datetimepicker": "^8.4.2",
+    "@react-native-google-signin/google-signin": "^16.1.2",
+    "@react-navigation/native": "^6.1.7",
+    "@react-navigation/stack": "^6.3.17",
+    "dotenv": "^17.2.1",
+    "expo": "53.0.19",
+    "expo-apple-authentication": "^7.2.4",
+    "expo-av": "~15.1.3",
+    "expo-font": "~13.3.2",
+    "firebase": "^12.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-calendars": "^1.1313.0",
+    "react-native-geolocation-service": "^5.3.1",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-image-picker": "^8.2.1",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-web": "^0.20.0",
+    "expo-dev-client": "~5.2.4",
+    "expo-blur": "~14.1.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
