@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { Image, Alert, ActivityIndicator } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -18,9 +18,10 @@ import { detectMoodTags } from '../../backend/utils/geminiService';
 import { StatusBar } from 'react-native';
 import { getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
 import { showAlert } from '../utils/appAlert';
+import { useSpeechRecognition } from '../utils/speechRecognition';
 
 
-export default function AddEntryScreen({ navigation }) {
+export default function AddEntryScreen({ navigation, route }) {
   const themeContext = useTheme();
   const { theme, isLoading, currentTheme } = themeContext;
   const isGlassTheme = isGlassThemeEnabled(currentTheme);
@@ -38,10 +39,50 @@ export default function AddEntryScreen({ navigation }) {
   const [eventTime, setEventTime] = useState('');
   const [aiEnabled, setAiEnabled] = useState(false);
   const [detectingMood, setDetectingMood] = useState(false);
+  const contentRef = useRef('');
 
-  React.useEffect(() => {
+  useEffect(() => { contentRef.current = content; }, [content]);
+
+  const handleSpeechResult = useCallback((text) => {
+    const prev = contentRef.current;
+    const separator = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+    const newContent = prev + separator + text;
+    setContent(newContent);
+    setWordCount(newContent.trim().split(/\s+/).filter(w => w.length > 0).length);
+  }, []);
+
+  const handleSpeechError = useCallback((error) => {
+    if (error === 'not-allowed') {
+      showAlert({ title: 'Microphone Blocked', message: 'Please allow microphone access in your device settings to use voice dictation.', confirmTone: 'danger' });
+    } else {
+      showAlert({ title: 'Voice Error', message: `Speech recognition error: ${error}`, confirmTone: 'danger' });
+    }
+  }, []);
+
+  const { isListening, interimText, startListening, stopListening } = useSpeechRecognition({
+    onResult: handleSpeechResult,
+    onError: handleSpeechError,
+  });
+
+  useEffect(() => {
     checkAIStatus();
   }, []);
+
+  // Auto-start voice when navigated with voice: true
+  useEffect(() => {
+    if (route?.params?.voice) {
+      startListening();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleDictation = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
 
   const checkAIStatus = async () => {
     const enabled = await isAIEnabled();
@@ -91,7 +132,6 @@ export default function AddEntryScreen({ navigation }) {
     setWordCount(text.trim().split(/\s+/).filter(word => word.length > 0).length);
   };
 
-  // Removed stray misplaced async/await block
   const handleSave = async () => {
     if (!content.trim()) {
       await showAlert({ title: 'Empty Entry', message: 'Please write something before saving' });
@@ -165,13 +205,42 @@ export default function AddEntryScreen({ navigation }) {
           <RichTextEditor
             value={content}
             onChangeText={handleTextChange}
-            placeholder="What's on your mind?"
+            placeholder={isListening ? 'Listening... speak now' : "What's on your mind?"}
             onImageSelected={setImageUrl}
             onLocationTagged={setLocation}
             onAudioRecorded={(action) => {
               if (action === 'show') setShowAudioRecorder(true);
             }}
           />
+        </View>
+
+        <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
+          <TouchableOpacity
+            style={[
+              styles.moodDetectButton,
+              {
+                backgroundColor: isListening ? theme.accent : theme.surface,
+                borderWidth: 1,
+                borderColor: isListening ? theme.accent : theme.border,
+              },
+            ]}
+            onPress={toggleDictation}
+          >
+            <Ionicons
+              name={isListening ? 'mic-off-outline' : 'mic-outline'}
+              size={18}
+              color={isListening ? accentText : theme.text}
+            />
+            <Text style={[styles.moodDetectButtonText, { fontFamily, fontSize: fontSizes.base, color: isListening ? accentText : theme.text }]}>
+              {isListening ? 'Stop Dictating' : 'Dictate'}
+            </Text>
+          </TouchableOpacity>
+
+          {interimText ? (
+            <View style={{ marginTop: 8, padding: 8, borderRadius: 8, backgroundColor: theme.accent + '15' }}>
+              <Text style={{ color: theme.textSecondary, fontSize: 14, fontStyle: 'italic', fontFamily }}>{interimText}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.metaContainer}>

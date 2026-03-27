@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ArrowLeft, Edit, FileText, Clock, Mic, MapPin, Sparkles, Loader } from 'lucide-react';
 import { getTagColor, formatDate, countWords } from '../utils/entryUtils';
@@ -60,6 +60,7 @@ export default function ViewEntryPage() {
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [entry, setEntry] = useState(null);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
@@ -68,9 +69,14 @@ export default function ViewEntryPage() {
   const accentText = theme.onAccentText || '#fff';
 
   useEffect(() => {
-    loadEntry();
+    if (location.state?.entry) {
+      setEntry(location.state.entry);
+      setLoading(false);
+    } else {
+      loadEntry();
+    }
     checkAIStatus();
-  }, [id, user]);
+  }, [id, user, location.state]);
 
   const checkAIStatus = () => {
     try {
@@ -99,7 +105,11 @@ export default function ViewEntryPage() {
         throw new Error('AI features are disabled or API key not configured');
       }
 
-      const summaryText = await summarizeEntryWithGemini(entry.content, settings.apiKey, settings.model);
+      const fullContent = entry.isMergedGroup 
+        ? entry.subEntries.map(s => s.content).join('\n\n') 
+        : entry.content;
+
+      const summaryText = await summarizeEntryWithGemini(fullContent, settings.apiKey, settings.model);
       setSummary(summaryText);
     } catch (error) {
       console.error('Summarization error:', error);
@@ -113,9 +123,20 @@ export default function ViewEntryPage() {
     if (!user || !id) return;
 
     try {
-      const entryDoc = await getDoc(doc(db, 'entries', id));
-      if (entryDoc.exists()) {
-        setEntry({ id: entryDoc.id, ...entryDoc.data() });
+      if (id.startsWith('grouped-')) {
+        const dateKey = id.replace('grouped-', '');
+        const q = query(collection(db, 'entries'), where('userId', '==', user.uid));
+        const snapshot = await getDocs(q);
+        const allEntries = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+        const { groupEntriesByDate } = require('../utils/entryUtils');
+        const groups = groupEntriesByDate(allEntries, [dateKey]);
+        const virtual = groups.find(g => g.id === id);
+        if (virtual) setEntry(virtual);
+      } else {
+        const entryDoc = await getDoc(doc(db, 'entries', id));
+        if (entryDoc.exists()) {
+          setEntry({ id: entryDoc.id, ...entryDoc.data() });
+        }
       }
     } catch (error) {
       console.error('Error loading entry:', error);
@@ -143,7 +164,7 @@ export default function ViewEntryPage() {
     );
   }
 
-  const wordCount = countWords(entry.content);
+  const wordCount = countWords(entry.isMergedGroup ? entry.subEntries.map(s => s.content).join(' ') : entry.content);
   const readingTime = Math.ceil(wordCount / 200);
 
   const styles = {
@@ -317,7 +338,13 @@ export default function ViewEntryPage() {
           </button>
           <span style={styles.headerTitle}>Entry Details</span>
         </div>
-        <button style={styles.editButton} onClick={() => navigate(`/edit/${entry.id}`)}>
+        <button style={styles.editButton} onClick={() => {
+          if (entry.isMergedGroup) {
+            showAlert({ title: 'Merged Entry', message: 'To edit these entries, please unmerge them from the Home Screen first.', confirmTone: 'neutral' });
+          } else {
+            navigate(`/edit/${entry.id}`);
+          }
+        }}>
           <Edit size={16} />
           Edit
         </button>
@@ -376,79 +403,172 @@ export default function ViewEntryPage() {
           </div>
 
           <div style={styles.contentCard}>
-            <div style={styles.entryContent}>{entry.content}</div>
+            {entry.isMergedGroup ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                {entry.subEntries.map((sub, index) => (
+                  <div key={sub.id}>
+                    <div style={{ fontSize: '15px', fontWeight: '600', color: theme.textSecondary, marginBottom: '12px' }}>
+                      {new Date(sub.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase()}
+                    </div>
+                    
+                    <div style={styles.entryContent}>{sub.content}</div>
 
-            {(entry.imageUrl || entry.imageUri) && (
-              <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                <img 
-                  src={entry.imageUrl || entry.imageUri} 
-                  alt="Entry attachment" 
-                  style={{ maxWidth: '100%', borderRadius: '12px', maxHeight: '400px' }} 
-                />
+                    {(sub.imageUrl || sub.imageUri) && (
+                      <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                        <img 
+                          src={sub.imageUrl || sub.imageUri} 
+                          alt="Entry attachment" 
+                          style={{ maxWidth: '100%', borderRadius: '12px', maxHeight: '400px' }} 
+                        />
+                      </div>
+                    )}
+
+                    {sub.audioUrl && (
+                      <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Mic size={16} />
+                          Audio Recording
+                        </div>
+                        <audio controls style={{ width: '100%' }}>
+                          <source src={sub.audioUrl} type="audio/webm" />
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                    )}
+
+                    {sub.location && (
+                      <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <MapPin size={16} />
+                          Location
+                        </div>
+                        <div style={{ fontSize: '14px', color: theme.textSecondary }}>
+                          {sub.location.latitude.toFixed(6)}, {sub.location.longitude.toFixed(6)}
+                        </div>
+                        <a 
+                          href={`https://www.google.com/maps?q=${sub.location.latitude},${sub.location.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: '14px', color: theme.accent, marginTop: '8px', display: 'inline-block' }}
+                        >
+                          View on Google Maps
+                        </a>
+                      </div>
+                    )}
+
+                    {sub.eventTime && (
+                      <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Clock size={16} />
+                          Event Time: {new Date(sub.eventTime).toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+
+                    {sub.tags && sub.tags.length > 0 && (
+                      <div style={styles.tagsSection}>
+                        <div style={styles.tagsLabel}>Tags:</div>
+                        <div style={styles.tagsContainer}>
+                          {sub.tags.map(tag => (
+                            <span 
+                              key={tag} 
+                              style={{
+                                ...styles.tag,
+                                backgroundColor: `${getTagColor(tag)}20`,
+                                borderColor: getTagColor(tag),
+                                color: getTagColor(tag),
+                              }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {index < entry.subEntries.length - 1 && (
+                      <div style={{ height: '1px', backgroundColor: theme.border, marginTop: '32px' }} />
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+            ) : (
+              <>
+                <div style={styles.entryContent}>{entry.content}</div>
 
-            {entry.audioUrl && (
-              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Mic size={16} />
-                  Audio Recording
-                </div>
-                <audio controls style={{ width: '100%' }}>
-                  <source src={entry.audioUrl} type="audio/webm" />
-                  Your browser does not support the audio element.
-                </audio>
-              </div>
-            )}
+                {(entry.imageUrl || entry.imageUri) && (
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <img 
+                      src={entry.imageUrl || entry.imageUri} 
+                      alt="Entry attachment" 
+                      style={{ maxWidth: '100%', borderRadius: '12px', maxHeight: '400px' }} 
+                    />
+                  </div>
+                )}
 
-            {entry.location && (
-              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MapPin size={16} />
-                  Location
-                </div>
-                <div style={{ fontSize: '14px', color: theme.textSecondary }}>
-                  {entry.location.latitude.toFixed(6)}, {entry.location.longitude.toFixed(6)}
-                </div>
-                <a 
-                  href={`https://www.google.com/maps?q=${entry.location.latitude},${entry.location.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ fontSize: '14px', color: theme.accent, marginTop: '8px', display: 'inline-block' }}
-                >
-                  View on Google Maps
-                </a>
-              </div>
-            )}
+                {entry.audioUrl && (
+                  <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Mic size={16} />
+                      Audio Recording
+                    </div>
+                    <audio controls style={{ width: '100%' }}>
+                      <source src={entry.audioUrl} type="audio/webm" />
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                )}
 
-            {entry.eventTime && (
-              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Clock size={16} />
-                  Event Time: {new Date(entry.eventTime).toLocaleString()}
-                </div>
-              </div>
-            )}
-
-            {entry.tags && entry.tags.length > 0 && (
-              <div style={styles.tagsSection}>
-                <div style={styles.tagsLabel}>Tags:</div>
-                <div style={styles.tagsContainer}>
-                  {entry.tags.map(tag => (
-                    <span 
-                      key={tag} 
-                      style={{
-                        ...styles.tag,
-                        backgroundColor: `${getTagColor(tag)}20`,
-                        borderColor: getTagColor(tag),
-                        color: getTagColor(tag),
-                      }}
+                {entry.location && (
+                  <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <MapPin size={16} />
+                      Location
+                    </div>
+                    <div style={{ fontSize: '14px', color: theme.textSecondary }}>
+                      {entry.location.latitude.toFixed(6)}, {entry.location.longitude.toFixed(6)}
+                    </div>
+                    <a 
+                      href={`https://www.google.com/maps?q=${entry.location.latitude},${entry.location.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '14px', color: theme.accent, marginTop: '8px', display: 'inline-block' }}
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                      View on Google Maps
+                    </a>
+                  </div>
+                )}
+
+                {entry.eventTime && (
+                  <div style={{ marginTop: '16px', padding: '16px', backgroundColor: theme.background, borderRadius: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: theme.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={16} />
+                      Event Time: {new Date(entry.eventTime).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+
+                {entry.tags && entry.tags.length > 0 && (
+                  <div style={styles.tagsSection}>
+                    <div style={styles.tagsLabel}>Tags:</div>
+                    <div style={styles.tagsContainer}>
+                      {entry.tags.map(tag => (
+                        <span 
+                          key={tag} 
+                          style={{
+                            ...styles.tag,
+                            backgroundColor: `${getTagColor(tag)}20`,
+                            borderColor: getTagColor(tag),
+                            color: getTagColor(tag),
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

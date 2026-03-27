@@ -115,6 +115,17 @@ export default function UISettingsScreen({ navigation }) {
           currentValue={settings.cardSpacing}
           onSelect={(value) => updateSetting('cardSpacing', value)}
         />
+
+        <SettingOption
+          title="New Entry Button"
+          description="Choose the default action for the button on the home screen"
+          options={[
+            { label: 'Text', value: 'text' },
+            { label: 'Voice', value: 'voice' }
+          ]}
+          currentValue={settings.defaultEntryMode}
+          onSelect={(value) => updateSetting('defaultEntryMode', value)}
+        />
       </ScrollView>
     </View>
   );

@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Save, Tag, Image as ImageIcon, MapPin, Mic, Clock, X, Sparkles, Loader } from 'lucide-react';
+import { ArrowLeft, Save, Tag, Image as ImageIcon, MapPin, Mic, Clock, X, Sparkles, Loader, MicOff } from 'lucide-react';
 import { uploadImage, uploadAudio } from '../utils/mediaUpload';
 import { getPredefinedTags } from '../utils/entryUtils';
 import { isAIEnabled, getAISettings } from '../utils/aiSettings';
 import { detectMoodTags } from '../utils/geminiService';
 import { showAlert } from '../utils/appAlert';
 import { getMoodTags } from '../utils/moodTags';
+import { useSpeechRecognition } from '../utils/speechRecognition';
 
 export default function AddEntryPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [content, setContent] = useState('');
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
@@ -34,11 +36,60 @@ export default function AddEntryPage() {
   const [detectingMood, setDetectingMood] = useState(false);
   const [predefinedTags, setPredefinedTags] = useState([]);
   const accentText = theme.onAccentText || '#fff';
+  const contentRef = useRef('');
+
+  // Keep contentRef in sync so speech callback always has latest content
+  useEffect(() => { contentRef.current = content; }, [content]);
+
+  const handleSpeechResult = useCallback((text) => {
+    const prev = contentRef.current;
+    const separator = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+    const newContent = prev + separator + text;
+    setContent(newContent);
+    const words = newContent.trim().split(/\s+/).filter(w => w.length > 0);
+    setWordCount(words.length);
+  }, []);
+
+  const handleSpeechError = useCallback((error) => {
+    if (error === 'not-allowed') {
+      showAlert({ title: 'Microphone Blocked', message: 'Please allow microphone access in your browser settings to use voice dictation.', confirmTone: 'danger' });
+    } else {
+      showAlert({ title: 'Voice Error', message: `Speech recognition error: ${error}`, confirmTone: 'danger' });
+    }
+  }, []);
+
+  const { isListening, interimText, startListening, stopListening, isSupported } = useSpeechRecognition({
+    onResult: handleSpeechResult,
+    onError: handleSpeechError,
+  });
 
   useEffect(() => {
     checkAIStatus();
     getMoodTags().then(setPredefinedTags);
   }, []);
+
+  // Auto-start voice when navigated with ?voice=true
+  useEffect(() => {
+    if (searchParams.get('voice') === 'true' && isSupported) {
+      startListening();
+    }
+    if (searchParams.get('voice') === 'true' && !isSupported) {
+      showAlert({ title: 'Not Supported', message: 'Voice dictation is not supported in this browser. Please use Chrome, Edge, or Safari.' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleDictation = () => {
+    if (!isSupported) {
+      showAlert({ title: 'Not Supported', message: 'Voice dictation is not supported in this browser. Please use Chrome, Edge, or Safari.' });
+      return;
+    }
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
 
   const checkAIStatus = () => {
     try {
@@ -560,15 +611,41 @@ export default function AddEntryPage() {
                 <Mic size={16} />
                 {isRecording ? 'Stop' : 'Audio'}
               </button>
+
+              <button
+                style={{
+                  ...styles.toolButton,
+                  ...(isListening ? styles.toolButtonActive : {}),
+                }}
+                onClick={toggleDictation}
+                title={isListening ? 'Stop Dictation' : 'Start Dictation'}
+              >
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                {isListening ? 'Stop Dictating' : 'Dictate'}
+              </button>
             </div>
 
             <textarea
               style={styles.textarea}
-              placeholder="What's on your mind?"
+              placeholder={isListening ? 'Listening... speak now' : "What's on your mind?"}
               value={content}
               onChange={handleContentChange}
-              autoFocus
+              autoFocus={!searchParams.get('voice')}
             />
+
+            {interimText && (
+              <div style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                backgroundColor: `${theme.accent}15`,
+                color: theme.textSecondary,
+                fontSize: '14px',
+                fontStyle: 'italic',
+                marginTop: '8px',
+              }}>
+                {interimText}
+              </div>
+            )}
           </div>
 
           <div style={styles.metaCard}>

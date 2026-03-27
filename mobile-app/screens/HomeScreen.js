@@ -3,9 +3,9 @@ import { Image } from 'react-native';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, StatusBar, TextInput } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { getEntries, deleteEntry, getRecycleBin, saveToRecycleBin } from '../../backend/utils/storage';
+import { getEntries, deleteEntry, updateEntry, getRecycleBin, saveToRecycleBin } from '../../backend/utils/storage';
 import PlatformStorage from '../../backend/utils/platformStorage';
-import { sortEntries, countWords } from '../utils/entryUtils';
+import { sortEntries, countWords, getDateKey, groupEntriesByDate } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { useResponsive } from '../utils/responsive';
@@ -16,7 +16,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function HomeScreen({ navigation }) {
   const { theme, currentTheme } = useTheme();
-  const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
+  const { settings, getFontSizes, getFontFamily, getSpacing, updateSetting } = useUISettings();
   const { isDesktop, isMobile, cardColumns } = useResponsive();
   const [entries, setEntries] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
@@ -139,8 +139,10 @@ export default function HomeScreen({ navigation }) {
     setFilteredEntries(sortEntries(filtered, settings.sortBy));
   };
 
+  const groupedEntries = groupEntriesByDate(filteredEntries, settings.mergedDates || []);
+
   const handleDelete = async (id) => {
-    const entryToDelete = entries.find(e => e.id === id);
+    const entryToDelete = groupedEntries.find(e => e.id === id);
     if (!entryToDelete) return;
     setDeleteCandidate(entryToDelete);
   };
@@ -148,21 +150,61 @@ export default function HomeScreen({ navigation }) {
   const confirmDelete = async () => {
     if (!deleteCandidate) return;
 
-    const deletedEntry = { ...deleteCandidate, deletedAt: new Date().toISOString() };
-    const recycleBin = await getRecycleBin();
-    await saveToRecycleBin([...recycleBin, deletedEntry]);
-    await deleteEntry(deleteCandidate.id);
+    if (deleteCandidate.isMergedGroup) {
+      const recycleBin = await getRecycleBin();
+      const deletedEntries = deleteCandidate.subEntries.map(e => ({...e, deletedAt: new Date().toISOString()}));
+      await saveToRecycleBin([...recycleBin, ...deletedEntries]);
+      for (const e of deleteCandidate.subEntries) {
+        await deleteEntry(e.id);
+      }
+    } else {
+      const deletedEntry = { ...deleteCandidate, deletedAt: new Date().toISOString() };
+      const recycleBin = await getRecycleBin();
+      await saveToRecycleBin([...recycleBin, deletedEntry]);
+      await deleteEntry(deleteCandidate.id);
+    }
     setDeleteCandidate(null);
     loadData();
   };
 
-  const renderEntry = ({ item }) => (
-    <EntryCard
-      entry={item}
-      onPress={() => navigation.navigate('ViewEntry', { entry: item })}
-      onDelete={() => handleDelete(item.id)}
-    />
-  );
+  // Build date group counts for merge button
+  const dateGroupCounts = {};
+  filteredEntries.forEach(entry => {
+    const key = getDateKey(entry.date);
+    dateGroupCounts[key] = (dateGroupCounts[key] || 0) + 1;
+  });
+
+  const toggleMergeDate = (dateKey) => {
+    const currentMerged = settings.mergedDates || [];
+    if (currentMerged.includes(dateKey)) {
+      updateSetting('mergedDates', currentMerged.filter(d => d !== dateKey));
+    } else {
+      updateSetting('mergedDates', [...currentMerged, dateKey]);
+    }
+  };
+
+  const renderEntry = ({ item }) => {
+    if (item.isMergedGroup) {
+      return (
+        <EntryCard
+          entry={item}
+          onPress={() => navigation.navigate('ViewEntry', { entry: item })}
+          onDelete={() => handleDelete(item.id)}
+          onMerge={() => toggleMergeDate(item.id.replace('grouped-', ''))}
+        />
+      );
+    }
+
+    const hasMerge = dateGroupCounts[getDateKey(item.date)] > 1;
+    return (
+      <EntryCard
+        entry={item}
+        onPress={() => navigation.navigate('ViewEntry', { entry: item })}
+        onDelete={() => handleDelete(item.id)}
+        onMerge={hasMerge ? () => toggleMergeDate(getDateKey(item.date)) : undefined}
+      />
+    );
+  };
 
   const styles = createStyles(theme, fontSizes, fontFamily, spacing, settings, isDesktop, isMobile);
 
@@ -253,7 +295,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : (
           <FlatList
-            data={filteredEntries}
+            data={groupedEntries}
             renderItem={renderEntry}
             keyExtractor={item => item.id}
             showsVerticalScrollIndicator={false}
@@ -264,8 +306,8 @@ export default function HomeScreen({ navigation }) {
           />
         )}
       
-        <TouchableOpacity style={styles.floatingAddButton} onPress={() => navigation.navigate('AddEntry')}>
-          <Ionicons name="create-outline" size={24} color={theme.accent} />
+        <TouchableOpacity style={styles.floatingAddButton} onPress={() => navigation.navigate('AddEntry', settings.defaultEntryMode === 'voice' ? { voice: true } : undefined)}>
+          <Ionicons name={settings.defaultEntryMode === 'voice' ? 'mic-outline' : 'create-outline'} size={24} color={theme.accent} />
         </TouchableOpacity>
       
         {!isDesktop && (

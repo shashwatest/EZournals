@@ -8,7 +8,7 @@ import { useUISettings } from '../contexts/UISettingsContext';
 import { getTagColor } from '../../backend/utils/storage';
 import RichTextRenderer from './RichTextRenderer';
 
-export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
+export default function EntryCard({ entry, onPress, onDelete, onMerge, themeOverride }) {
   const { theme: contextTheme, currentTheme } = useTheme();
   const theme = themeOverride || contextTheme;
   const { settings, getFontSizes, getFontFamily, getSpacing } = useUISettings();
@@ -91,6 +91,11 @@ export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
             <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
               <Ionicons name="trash-outline" size={18} color={theme.danger} />
             </TouchableOpacity>
+            {onMerge && (
+              <TouchableOpacity onPress={onMerge} style={styles.deleteButton}>
+                <Ionicons name="git-merge-outline" size={18} color={theme.accent} />
+              </TouchableOpacity>
+            )}
           </View>
           
           <View style={styles.previewContainer}>
@@ -123,6 +128,11 @@ export default function EntryCard({ entry, onPress, onDelete, themeOverride }) {
           <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
             <Ionicons name="trash-outline" size={18} color={theme.danger} />
           </TouchableOpacity>
+          {onMerge && (
+            <TouchableOpacity onPress={onMerge} style={styles.deleteButton}>
+              <Ionicons name="git-merge-outline" size={18} color={theme.accent} />
+            </TouchableOpacity>
+          )}
         </View>
 
         <RichTextRenderer 

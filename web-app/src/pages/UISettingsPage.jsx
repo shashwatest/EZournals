@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUISettings } from '../contexts/UISettingsContext';
-import { ArrowLeft, Type, Layout, SortAsc, Space } from 'lucide-react';
+import { ArrowLeft, Type, Layout, SortAsc, Space, Mic, GitMerge } from 'lucide-react';
 
 export default function UISettingsPage() {
   const { theme } = useTheme();
@@ -226,6 +226,18 @@ export default function UISettingsPage() {
         ]}
         currentValue={settings.cardSpacing}
         onSelect={(value) => updateSetting('cardSpacing', value)}
+      />
+
+      <SettingOption
+        title="New Entry Button"
+        description="Choose the default action for the button on the home screen"
+        icon={Mic}
+        options={[
+          { label: 'Text', value: 'text' },
+          { label: 'Voice', value: 'voice' },
+        ]}
+        currentValue={settings.defaultEntryMode}
+        onSelect={(value) => updateSetting('defaultEntryMode', value)}
       />
     </div>
   );

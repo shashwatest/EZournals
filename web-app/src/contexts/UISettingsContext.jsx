@@ -13,6 +13,8 @@ const defaultSettings = {
   cardLayout: 'list',
   sortBy: 'newest',
   cardSpacing: 'normal',
+  defaultEntryMode: 'text',
+  mergedDates: [],
 };
 
 export function UISettingsProvider({ children }) {

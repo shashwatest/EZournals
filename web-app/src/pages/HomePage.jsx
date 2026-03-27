@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUISettings } from '../contexts/UISettingsContext';
-import { collection, query, where, getDocs, doc, deleteDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Search, Trash2, Edit } from 'lucide-react';
-import { sortEntries, countWords } from '../utils/entryUtils';
+import { Plus, Search, Trash2, Edit, Mic } from 'lucide-react';
+import { sortEntries, countWords, getDateKey, groupEntriesByDate } from '../utils/entryUtils';
+import { GitMerge } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 // SVG noise texture for matte feel on cards
@@ -17,7 +18,7 @@ const ACTIVE_CACHE_USER_KEY = 'active_local_user_id';
 export default function HomePage() {
   const { theme, currentTheme } = useTheme();
   const { user } = useAuth();
-  const { settings } = useUISettings();
+  const { settings, updateSetting } = useUISettings();
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,17 +138,39 @@ export default function HomePage() {
     settings.sortBy
   );
 
+  // Build a set of date keys that have multiple entries (for merge button)
+  const dateGroupCounts = {};
+  filteredAndSortedEntries.forEach(entry => {
+    const key = getDateKey(entry.date);
+    dateGroupCounts[key] = (dateGroupCounts[key] || 0) + 1;
+  });
+
+  const groupedEntries = groupEntriesByDate(filteredAndSortedEntries, settings.mergedDates || []);
+
+  const toggleMergeDate = (dateKey) => {
+    const currentMerged = settings.mergedDates || [];
+    if (currentMerged.includes(dateKey)) {
+      updateSetting('mergedDates', currentMerged.filter(d => d !== dateKey));
+    } else {
+      updateSetting('mergedDates', [...currentMerged, dateKey]);
+    }
+  };
+
   const handleDelete = async (entryId, entry) => {
     try {
-      const deletedEntry = {
-        ...entry,
-        deletedAt: Date.now()
-      };
-      
-      await setDoc(doc(db, 'deletedEntries', entryId), deletedEntry);
-      await deleteDoc(doc(db, 'entries', entryId));
-      
-      setEntries(entries.filter(e => e.id !== entryId));
+      if (entry.isMergedGroup) {
+        for (const sub of entry.subEntries) {
+          const deletedEntry = { ...sub, deletedAt: Date.now() };
+          await setDoc(doc(db, 'deletedEntries', sub.id), deletedEntry);
+          await deleteDoc(doc(db, 'entries', sub.id));
+        }
+        setEntries(entries.filter(e => !entry.subEntries.find(s => s.id === e.id)));
+      } else {
+        const deletedEntry = { ...entry, deletedAt: Date.now() };
+        await setDoc(doc(db, 'deletedEntries', entryId), deletedEntry);
+        await deleteDoc(doc(db, 'entries', entryId));
+        setEntries(entries.filter(e => e.id !== entryId));
+      }
     } catch (error) {
       console.error('Error deleting entry:', error);
     } finally {
@@ -381,14 +404,14 @@ export default function HomePage() {
           </div>
         ) : (
           <div style={styles.grid}>
-            {filteredAndSortedEntries.map((entry) => (
+            {groupedEntries.map((entry) => (
               <div
                 key={entry.id}
                 style={styles.card}
                 onMouseEnter={cardHoverIn}
                 onMouseLeave={cardHoverOut}
               >
-                <div onClick={() => navigate(`/entry/${entry.id}`)} style={{ cursor: 'pointer' }}>
+                <div onClick={() => navigate(`/entry/${entry.id}`, { state: { entry } })} style={{ cursor: 'pointer' }}>
                   <div style={styles.cardDate}>
                     {new Date(entry.date).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -406,30 +429,62 @@ export default function HomePage() {
                   )}
                 </div>
                 <div style={styles.cardActions}>
-                  <button
-                    style={{ ...styles.actionButton, ...styles.editButton }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/edit/${entry.id}`);
-                    }}
-                    title="Edit"
-                    onMouseEnter={btnHoverIn}
-                    onMouseLeave={btnHoverOut}
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    style={{ ...styles.actionButton, ...styles.deleteButton }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteCandidate(entry);
-                    }}
-                    title="Delete"
-                    onMouseEnter={btnHoverIn}
-                    onMouseLeave={btnHoverOut}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {entry.isMergedGroup ? (
+                    <button
+                      style={{ ...styles.actionButton, color: theme.accent, boxShadow: 'none' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Get the base datekey from the group ID which is `grouped-2023-10-25`
+                        toggleMergeDate(entry.id.replace('grouped-', ''));
+                      }}
+                      title="Unmerge group"
+                      onMouseEnter={btnHoverIn}
+                      onMouseLeave={btnHoverOut}
+                    >
+                      <GitMerge size={16} />
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        style={{ ...styles.actionButton, ...styles.editButton }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/edit/${entry.id}`);
+                        }}
+                        title="Edit"
+                        onMouseEnter={btnHoverIn}
+                        onMouseLeave={btnHoverOut}
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        style={{ ...styles.actionButton, ...styles.deleteButton }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteCandidate(entry);
+                        }}
+                        title="Delete"
+                        onMouseEnter={btnHoverIn}
+                        onMouseLeave={btnHoverOut}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      {dateGroupCounts[getDateKey(entry.date)] > 1 && (
+                        <button
+                          style={{ ...styles.actionButton, color: theme.accent, boxShadow: 'none' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMergeDate(getDateKey(entry.date));
+                          }}
+                          title={`Merge ${dateGroupCounts[getDateKey(entry.date)]} entries from this date`}
+                          onMouseEnter={btnHoverIn}
+                          onMouseLeave={btnHoverOut}
+                        >
+                          <GitMerge size={16} />
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -449,12 +504,12 @@ export default function HomePage() {
       />
       <button
         style={styles.newButton}
-        onClick={() => navigate('/add')}
-        title="New Entry"
+        onClick={() => navigate(settings.defaultEntryMode === 'voice' ? '/add?voice=true' : '/add')}
+        title={settings.defaultEntryMode === 'voice' ? 'New Voice Entry' : 'New Entry'}
         onMouseEnter={btnHoverIn}
         onMouseLeave={btnHoverOut}
       >
-        <Plus size={26} />
+        {settings.defaultEntryMode === 'voice' ? <Mic size={26} /> : <Plus size={26} />}
       </button>
     </div>
   );

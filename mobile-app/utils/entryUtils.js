@@ -97,3 +97,64 @@ export const formatSyncTime = (timestamp) => {
   if (hours < 24) return `${hours}h ago`;
   return `${days}d ago`;
 };
+
+/**
+ * Returns a locale-independent date key (YYYY-MM-DD) for grouping entries.
+ */
+export const getDateKey = (dateString) => {
+  const d = new Date(dateString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/**
+ * Groups entries visually by date if the date is in mergedDates.
+ * Returns an array of standard entries and grouped virtual entries.
+ */
+export const groupEntriesByDate = (entries, mergedDatesArray = []) => {
+  if (!entries || entries.length === 0) return [];
+  
+  const groups = {};
+  const result = [];
+  
+  // First, group by datekey
+  entries.forEach(entry => {
+    const key = getDateKey(entry.date);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(entry);
+  });
+  
+  // Then format result
+  Object.keys(groups).forEach(key => {
+    const dayEntries = groups[key];
+    
+    if (mergedDatesArray.includes(key) && dayEntries.length > 1) {
+      // Create a virtual grouped entry
+      const sorted = [...dayEntries].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const allTags = [...new Set(sorted.flatMap(e => e.tags || []))];
+      
+      // We combine the first 300 chars for preview purposes on the home screen
+      const combinedTextPreview = sorted.map(e => {
+        const time = new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `${time}\n\n${e.content}`;
+      }).join('\n\n').substring(0, 300) + '...';
+
+      // Use the first entry's main props as a baseline, but tag it as a group
+      result.push({
+        ...sorted[0],
+        id: `grouped-${key}`,
+        isMergedGroup: true,
+        subEntries: sorted,
+        content: combinedTextPreview,
+        tags: allTags,
+        // Calculate total words for stats display
+        _totalWords: sorted.reduce((sum, e) => sum + countWords(e.content), 0)
+      });
+    } else {
+      // Just push individual entries
+      dayEntries.forEach(e => result.push(e));
+    }
+  });
+  
+  // Grouping messes up the master sort order, so re-sort by date
+  return result.sort((a, b) => new Date(b.date) - new Date(a.date));
+};

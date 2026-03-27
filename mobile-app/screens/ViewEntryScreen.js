@@ -36,7 +36,10 @@ export default function ViewEntryScreen({ route, navigation }) {
   const handleSummarize = async () => {
     setSummarizing(true);
     try {
-      const summaryText = await summarizeEntry(entry.content);
+      const fullContent = entry.isMergedGroup 
+        ? entry.subEntries.map(s => s.content).join('\n\n') 
+        : entry.content;
+      const summaryText = await summarizeEntry(fullContent);
       setSummary(summaryText);
     } catch (error) {
       console.error('Summarization error:', error);
@@ -48,8 +51,10 @@ export default function ViewEntryScreen({ route, navigation }) {
 
   if (!theme) return null;
 
-  const wordCount = countWords(entry.content);
-  const readingTime = Math.ceil(wordCount / 200); // Average reading speed
+  const wordCount = entry.isMergedGroup 
+    ? countWords(entry.subEntries.map(s => s.content).join(' ')) 
+    : countWords(entry.content);
+  const readingTime = Math.ceil(wordCount / 200);
 
   const styles = createStyles(theme);
 
@@ -62,10 +67,18 @@ export default function ViewEntryScreen({ route, navigation }) {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-        <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>Entry Details</Text>
+          <Text style={[styles.headerTitle, { fontFamily, fontSize: fontSizes.header }]}>
+            {entry.isMergedGroup ? 'Daily Timeline' : 'Entry Details'}
+          </Text>
         </View>
         <TouchableOpacity 
-          onPress={() => navigation.navigate('EditEntry', { entry })}
+          onPress={() => {
+            if (entry.isMergedGroup) {
+              showAlert({ title: 'Merged Entry', message: 'To edit these entries, please unmerge them from the Home Screen first.', confirmTone: 'neutral' });
+            } else {
+              navigation.navigate('EditEntry', { entry });
+            }
+          }}
           style={styles.editButton}
         >
           <Ionicons name="create-outline" size={20} color={theme.accent} />
@@ -90,7 +103,6 @@ export default function ViewEntryScreen({ route, navigation }) {
             </View>
           </View>
           
-          {/* AI Summarize Button */}
           {aiEnabled && (
             <TouchableOpacity
               style={[styles.summarizeButton, { backgroundColor: theme.accent, marginTop: 16 }]}
@@ -108,7 +120,6 @@ export default function ViewEntryScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
           
-          {/* Summary Display */}
           {summary && (
             <View style={[styles.summaryContainer, { backgroundColor: theme.accent + '15', borderColor: theme.accent + '30', marginTop: 12 }]}>
               <View style={styles.summaryHeader}>
@@ -125,50 +136,114 @@ export default function ViewEntryScreen({ route, navigation }) {
         </View>
         
         <View style={styles.contentContainer}>
-          <RichTextRenderer content={entry.content} style={{ ...styles.content, fontFamily, fontSize: fontSizes.base }} />
-          {/* Show attached image if present */}
-          {entry.imageUrl && (
-            <View style={{ marginTop: 16, alignItems: 'center' }}>
-              <Image source={{ uri: entry.imageUrl }} style={{ width: 180, height: 180, borderRadius: 12, marginVertical: 8 }} />
+          {entry.isMergedGroup ? (
+            <View style={{ gap: 32 }}>
+              {entry.subEntries.map((sub, index) => (
+                <View key={sub.id}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary, marginBottom: 12, fontFamily }}>
+                    {new Date(sub.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase()}
+                  </Text>
+                  
+                  <RichTextRenderer content={sub.content} style={{ ...styles.content, fontFamily, fontSize: fontSizes.base }} />
+                  
+                  {(sub.imageUrl || sub.imageUri) && (
+                    <View style={{ marginTop: 16, alignItems: 'center' }}>
+                      <Image source={{ uri: sub.imageUrl || sub.imageUri }} style={{ width: 180, height: 180, borderRadius: 12, marginVertical: 8 }} />
+                    </View>
+                  )}
+                  
+                  {sub.location && (
+                    <View style={{ marginTop: 8, alignItems: 'center' }}>
+                      <Ionicons name="location-outline" size={18} color={theme.primary} />
+                      <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
+                        Location: {typeof sub.location === 'string' ? sub.location : `${sub.location.latitude.toFixed(4)}, ${sub.location.longitude.toFixed(4)}`}
+                      </Text>
+                    </View>
+                  )}
+
+                  {sub.eventTime && (
+                    <View style={{ marginTop: 8, alignItems: 'center' }}>
+                      <Ionicons name="time-outline" size={18} color={theme.primary} />
+                      <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
+                        Event Time: {new Date(sub.eventTime).toLocaleString()}
+                      </Text>
+                    </View>
+                  )}
+
+                  {sub.tags && sub.tags.length > 0 && (
+                    <View style={styles.tagsContainer}>
+                      <Text style={[styles.tagsLabel, { fontFamily, fontSize: fontSizes.base }]}>Tags:</Text>
+                      <View style={styles.tagsWrapper}>
+                        {sub.tags.map(tag => (
+                          <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '20', borderColor: getTagColor(tag) }]}> 
+                            <Text style={[styles.tagText, { color: getTagColor(tag), fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {sub.audioUrl && (
+                    <View style={styles.audioContainer}>
+                      <Text style={[styles.audioLabel, { fontFamily, fontSize: fontSizes.base }]}>Audio Recording:</Text>
+                      <AudioPlayer audioUrl={sub.audioUrl} />
+                    </View>
+                  )}
+
+                  {index < entry.subEntries.length - 1 && (
+                    <View style={{ height: 1, backgroundColor: theme.border, marginTop: 32 }} />
+                  )}
+                </View>
+              ))}
             </View>
-          )}
-          {/* Show tagged location if present */}
-          {entry.location && (
-            <View style={{ marginTop: 8, alignItems: 'center' }}>
-              <Ionicons name="location-outline" size={18} color={theme.primary} />
-              <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
-                Location: {typeof entry.location === 'string' ? entry.location : `${entry.location.latitude.toFixed(4)}, ${entry.location.longitude.toFixed(4)}`}
-              </Text>
-            </View>
-          )}
-          {/* Show event time if present */}
-          {entry.eventTime && (
-            <View style={{ marginTop: 8, alignItems: 'center' }}>
-              <Ionicons name="time-outline" size={18} color={theme.primary} />
-              <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
-                Event Time: {new Date(entry.eventTime).toLocaleString()}
-              </Text>
-            </View>
-          )}
-          {/* Show tags if present */}
-          {entry.tags && entry.tags.length > 0 && (
-            <View style={styles.tagsContainer}>
-              <Text style={[styles.tagsLabel, { fontFamily, fontSize: fontSizes.base }]}>Tags:</Text>
-              <View style={styles.tagsWrapper}>
-                {entry.tags.map(tag => (
-                  <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '20', borderColor: getTagColor(tag) }]}> 
-                    <Text style={[styles.tagText, { color: getTagColor(tag), fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
+          ) : (
+            <>
+              <RichTextRenderer content={entry.content} style={{ ...styles.content, fontFamily, fontSize: fontSizes.base }} />
+              
+              {(entry.imageUrl || entry.imageUri) && (
+                <View style={{ marginTop: 16, alignItems: 'center' }}>
+                  <Image source={{ uri: entry.imageUrl || entry.imageUri }} style={{ width: 180, height: 180, borderRadius: 12, marginVertical: 8 }} />
+                </View>
+              )}
+              
+              {entry.location && (
+                <View style={{ marginTop: 8, alignItems: 'center' }}>
+                  <Ionicons name="location-outline" size={18} color={theme.primary} />
+                  <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
+                    Location: {typeof entry.location === 'string' ? entry.location : `${entry.location.latitude.toFixed(4)}, ${entry.location.longitude.toFixed(4)}`}
+                  </Text>
+                </View>
+              )}
+
+              {entry.eventTime && (
+                <View style={{ marginTop: 8, alignItems: 'center' }}>
+                  <Ionicons name="time-outline" size={18} color={theme.primary} />
+                  <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily }}>
+                    Event Time: {new Date(entry.eventTime).toLocaleString()}
+                  </Text>
+                </View>
+              )}
+
+              {entry.tags && entry.tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  <Text style={[styles.tagsLabel, { fontFamily, fontSize: fontSizes.base }]}>Tags:</Text>
+                  <View style={styles.tagsWrapper}>
+                    {entry.tags.map(tag => (
+                      <View key={tag} style={[styles.tag, { backgroundColor: getTagColor(tag) + '20', borderColor: getTagColor(tag) }]}> 
+                        <Text style={[styles.tagText, { color: getTagColor(tag), fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            </View>
-          )}
-          {/* Show audio if present */}
-          {entry.audioUrl && (
-            <View style={styles.audioContainer}>
-              <Text style={[styles.audioLabel, { fontFamily, fontSize: fontSizes.base }]}>Audio Recording:</Text>
-              <AudioPlayer audioUrl={entry.audioUrl} />
-            </View>
+                </View>
+              )}
+
+              {entry.audioUrl && (
+                <View style={styles.audioContainer}>
+                  <Text style={[styles.audioLabel, { fontFamily, fontSize: fontSizes.base }]}>Audio Recording:</Text>
+                  <AudioPlayer audioUrl={entry.audioUrl} />
+                </View>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
