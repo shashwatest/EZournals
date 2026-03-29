@@ -49,6 +49,11 @@ export default function EditEntryScreen({ route, navigation }) {
   };
 
   const handleDetectMood = async () => {
+    if (content.length > 50000) {
+      await showAlert({ title: 'Entry Too Long', message: 'Your entry exceeds the maximum allowed length (50,000 characters). Please condense it before saving.', confirmTone: 'danger' });
+      return;
+    }
+
     if (!content.trim()) {
       await showAlert({ title: 'No Content', message: 'Please write something before detecting mood' });
       return;

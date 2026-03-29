@@ -5,10 +5,21 @@ A modern, desktop-optimized web interface for EZournals built with React and Vit
 ## Features
 
 - ✅ Clean, desktop-first UI with glassmorphism theme
-- ✅ Firebase Authentication (Email/Password)
+- ✅ Firebase Authentication (Email/Password, Google)
 - ✅ Cloud sync with Firestore
 - ✅ Real-time entry management
+- ✅ Rich text editing with formatting
+- ✅ Voice dictation and audio recording
+- ✅ Image attachments
 - ✅ Search and filter entries
+- ✅ Mood tags with custom colors
+- ✅ AI-powered insights (Gemini integration)
+- ✅ Custom theme creator
+- ✅ 11 built-in themes
+- ✅ Analytics dashboard
+- ✅ Entry merging/grouping
+- ✅ Recycle bin
+- ✅ Profile management
 - ✅ Responsive design
 - ✅ Fast performance with Vite
 
@@ -102,17 +113,6 @@ We moved from React Native Web to a dedicated React web app because:
 ### Mobile App
 
 The React Native mobile app remains in the parent directory and continues to work perfectly for iOS and Android.
-
-## Next Steps
-
-1. ✅ Basic authentication and entry management
-2. 🚧 Complete ViewEntryPage with full entry details
-3. 🚧 Add Calendar view
-4. 🚧 Add Analytics dashboard
-5. 🚧 Add Profile page with image upload
-6. 🚧 Add Settings page
-7. 🚧 Add rich text editor
-8. 🚧 Add media support (images, audio)
 
 ## Deployment
 

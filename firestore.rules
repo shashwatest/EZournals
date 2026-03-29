@@ -24,5 +24,10 @@ service cloud.firestore {
     match /userPreferences/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // User storage quotas - users can only read/write their own quota
+    match /userStorageQuotas/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }

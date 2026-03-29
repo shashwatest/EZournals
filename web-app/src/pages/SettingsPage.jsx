@@ -2,27 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Palette, Tag, Info, Plus, X, Cloud, RefreshCw, Edit2, Trash2, Check, ChevronRight } from 'lucide-react';
+import { Palette, Info, Plus, X, Cloud, RefreshCw, Edit2, Trash2, Check, ChevronRight, Tag } from 'lucide-react';
 import { collection, getDocs, setDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { formatSyncTime } from '../utils/entryUtils';
 import { showConfirm } from '../utils/appAlert';
 import { getMoodTags, addMoodTag, updateMoodTag, deleteMoodTag } from '../utils/moodTags';
+import QuotaUsage from '../components/QuotaUsage';
 
 export default function SettingsPage() {
   const { theme, currentTheme, changeTheme, customThemes, allThemes, defaultThemes, deleteCustomTheme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [userTags, setUserTags] = useState([]);
-  const [newTag, setNewTag] = useState('');
   const [moodTags, setMoodTags] = useState([]);
   const [newMoodTag, setNewMoodTag] = useState('');
+  const [newMoodColor, setNewMoodColor] = useState('#FFD700');
   const [editingMoodTag, setEditingMoodTag] = useState(null);
   const [editingMoodName, setEditingMoodName] = useState('');
+  const [editingMoodColor, setEditingMoodColor] = useState('#FFD700');
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [syncMessage, setSyncMessage] = useState('');
-  const accentText = theme.onAccentText || '#fff';
+  const accentText = theme?.onAccentText || '#fff';
 
   useEffect(() => {
     loadSettings();
@@ -66,31 +67,12 @@ export default function SettingsPage() {
   };
 
   const loadSettings = () => {
-    const savedTags = localStorage.getItem('userTags');
-    if (savedTags) {
-      setUserTags(JSON.parse(savedTags));
-    }
     getMoodTags().then(setMoodTags);
-  };
-
-  const addNewTag = () => {
-    if (newTag.trim() && !userTags.includes(newTag.trim())) {
-      const updatedTags = [...userTags, newTag.trim()];
-      setUserTags(updatedTags);
-      localStorage.setItem('userTags', JSON.stringify(updatedTags));
-      setNewTag('');
-    }
-  };
-
-  const deleteTag = (tagToDelete) => {
-    const updatedTags = userTags.filter(tag => tag !== tagToDelete);
-    setUserTags(updatedTags);
-    localStorage.setItem('userTags', JSON.stringify(updatedTags));
   };
 
   const addNewMood = async () => {
     try {
-      setMoodTags(await addMoodTag(newMoodTag));
+      setMoodTags(await addMoodTag(newMoodTag, newMoodColor));
       setNewMoodTag('');
     } catch (error) {
       setSyncMessage(error.message);
@@ -101,7 +83,7 @@ export default function SettingsPage() {
   const saveMoodEdit = async () => {
     if (!editingMoodTag) return;
     try {
-      setMoodTags(await updateMoodTag(editingMoodTag, editingMoodName));
+      setMoodTags(await updateMoodTag(editingMoodTag, editingMoodName, editingMoodColor));
       setEditingMoodTag(null);
       setEditingMoodName('');
     } catch (error) {
@@ -109,6 +91,11 @@ export default function SettingsPage() {
       setTimeout(() => setSyncMessage(''), 3000);
     }
   };
+
+  // Guard against undefined theme during initial render
+  if (!theme || !defaultThemes) {
+    return <div style={{ padding: '32px', textAlign: 'center' }}>Loading...</div>;
+  }
 
   const styles = {
     container: {
@@ -282,6 +269,9 @@ export default function SettingsPage() {
             Last synced: {formatSyncTime(lastSync)}
           </p>
         )}
+        <div style={{ marginTop: '24px' }}>
+          <QuotaUsage />
+        </div>
         {syncMessage && (
           <p style={{ fontSize: '14px', color: theme.accent, textAlign: 'center', marginTop: '8px' }}>
             {syncMessage}
@@ -466,7 +456,14 @@ export default function SettingsPage() {
           <Tag size={20} />
           Mood Tags
         </h2>
+        
         <div style={styles.tagInputContainer}>
+          <input
+            type="color"
+            value={newMoodColor}
+            onChange={(e) => setNewMoodColor(e.target.value)}
+            style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+          />
           <input
             type="text"
             style={styles.tagInput}
@@ -475,6 +472,7 @@ export default function SettingsPage() {
             onChange={(e) => setNewMoodTag(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addNewMood()}
           />
+
           <button style={styles.addButton} onClick={addNewMood}>
             <Plus size={20} />
           </button>
@@ -493,16 +491,25 @@ export default function SettingsPage() {
                 borderRadius: '8px',
               }}
             >
-              <div style={{ ...styles.themeColor, backgroundColor: tag.color }} />
+              {editingMoodTag !== tag.name && <div style={{ ...styles.themeColor, backgroundColor: tag.color }} />}
+              
               {editingMoodTag === tag.name ? (
-                <input
-                  type="text"
-                  style={styles.tagInput}
-                  value={editingMoodName}
-                  onChange={(e) => setEditingMoodName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && saveMoodEdit()}
-                  autoFocus
-                />
+                <>
+                  <input
+                    type="color"
+                    value={editingMoodColor}
+                    onChange={(e) => setEditingMoodColor(e.target.value)}
+                    style={{ width: '24px', height: '24px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }}
+                  />
+                  <input
+                    type="text"
+                    style={styles.tagInput}
+                    value={editingMoodName}
+                    onChange={(e) => setEditingMoodName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && saveMoodEdit()}
+                    autoFocus
+                  />
+                </>
               ) : (
                 <span style={styles.themeLabel}>{tag.name}</span>
               )}
@@ -517,7 +524,7 @@ export default function SettingsPage() {
                 </>
               ) : (
                 <>
-                  <button style={styles.deleteButton} onClick={() => { setEditingMoodTag(tag.name); setEditingMoodName(tag.name); }}>
+                  <button style={styles.deleteButton} onClick={() => { setEditingMoodTag(tag.name); setEditingMoodName(tag.name); setEditingMoodColor(tag.color); }}>
                     <Edit2 size={16} />
                   </button>
                   <button
@@ -541,44 +548,6 @@ export default function SettingsPage() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>
-          <Tag size={20} />
-          Custom Tags
-        </h2>
-        <div style={styles.tagInputContainer}>
-          <input
-            type="text"
-            style={styles.tagInput}
-            placeholder="Create new tag"
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && addNewTag()}
-          />
-          <button style={styles.addButton} onClick={addNewTag}>
-            <Plus size={20} />
-          </button>
-        </div>
-
-        {userTags.length > 0 && (
-          <div>
-            <p style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>
-              Your Tags:
-            </p>
-            <div style={styles.tagsContainer}>
-              {userTags.map(tag => (
-                <div key={tag} style={styles.tag}>
-                  <span>{tag}</span>
-                  <button style={styles.deleteButton} onClick={() => deleteTag(tag)}>
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <div style={styles.section}>

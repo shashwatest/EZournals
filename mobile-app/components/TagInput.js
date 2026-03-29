@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getPredefinedTags, getUserTags, saveUserTag, getTagColor } from '../../backend/utils/storage';
+import { getPredefinedTags, getUserTags, saveUserTag } from '../../backend/utils/storage';
+import { getTagColor } from '../utils/entryUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { getMoodTags } from '../../backend/utils/moodTags';
 
@@ -37,7 +38,6 @@ export default function TagInput({ selectedTags, onTagsChange }) {
   };
 
 
-
   const allTags = [...predefinedTags.map(t => t.name), ...userTags];
 
   const styles = createStyles(theme);
@@ -47,7 +47,7 @@ export default function TagInput({ selectedTags, onTagsChange }) {
       <Text style={[styles.label, { fontFamily, fontSize: fontSizes.title }]}>Tags</Text>
       
       {selectedTags.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectedTags}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectedTags} contentContainerStyle={{ flexGrow: 1, paddingRight: 32, gap: 8, paddingBottom: 8 }} nestedScrollEnabled={true}>
           {selectedTags.map(tag => (
             <TouchableOpacity key={tag} style={[styles.selectedTag, { backgroundColor: getTagColor(tag) }]} onPress={() => removeTag(tag)}>
               <Text style={[styles.selectedTagText, { fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
@@ -57,14 +57,13 @@ export default function TagInput({ selectedTags, onTagsChange }) {
         </ScrollView>
       )}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsList}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsList} contentContainerStyle={{ flexGrow: 1, paddingRight: 32, gap: 8, paddingBottom: 8 }} nestedScrollEnabled={true}>
         {allTags.filter(tag => !selectedTags.includes(tag)).map(tag => (
           <TouchableOpacity key={tag} style={[styles.tag, { borderColor: getTagColor(tag) }]} onPress={() => addTag(tag)}>
             <Text style={[styles.tagText, { color: getTagColor(tag), fontFamily, fontSize: fontSizes.base }]}>{tag}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-
 
     </View>
   );

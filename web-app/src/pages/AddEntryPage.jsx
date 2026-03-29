@@ -12,6 +12,8 @@ import { detectMoodTags } from '../utils/geminiService';
 import { showAlert } from '../utils/appAlert';
 import { getMoodTags } from '../utils/moodTags';
 import { useSpeechRecognition } from '../utils/speechRecognition';
+import { saveDraft, loadDraft, clearDraft } from '../utils/drafts';
+import { saveEntry } from '../utils/storage';
 
 export default function AddEntryPage() {
   const { theme } = useTheme();
@@ -35,6 +37,9 @@ export default function AddEntryPage() {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [detectingMood, setDetectingMood] = useState(false);
   const [predefinedTags, setPredefinedTags] = useState([]);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState(null);
+  const autoSaveTimerRef = useRef(null);
   const accentText = theme.onAccentText || '#fff';
   const contentRef = useRef('');
 
@@ -66,7 +71,49 @@ export default function AddEntryPage() {
   useEffect(() => {
     checkAIStatus();
     getMoodTags().then(setPredefinedTags);
+    checkForDraft();
   }, []);
+
+  const checkForDraft = async () => {
+    const draft = await loadDraft();
+    if (draft && draft.content && !content.trim()) {
+      setPendingDraft(draft);
+      setShowDraftPrompt(true);
+    }
+  };
+
+  const resumeDraft = () => {
+    if (pendingDraft) {
+      setContent(pendingDraft.content);
+      setTags(pendingDraft.tags || []);
+      setEventTime(pendingDraft.eventTime || '');
+    }
+    setShowDraftPrompt(false);
+  };
+
+  const discardDraft = () => {
+    clearDraft();
+    setShowDraftPrompt(false);
+  };
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!content.trim() && tags.length === 0) return;
+    
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveDraft({
+        content,
+        tags,
+        eventTime,
+      });
+    }, 3000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [content, tags, eventTime]);
 
   // Auto-start voice when navigated with ?voice=true
   useEffect(() => {
@@ -102,6 +149,11 @@ export default function AddEntryPage() {
   };
 
   const handleDetectMood = async () => {
+    if (content.length > 50000) {
+      await showAlert({ title: 'Entry Too Long', message: 'Your entry exceeds the maximum allowed length (50,000 characters). Please condense it before saving.', confirmTone: 'danger' });
+      return;
+    }
+
     if (!content.trim()) {
       await showAlert({ title: 'No Content', message: 'Please write something before detecting mood' });
       return;
@@ -271,28 +323,17 @@ export default function AddEntryPage() {
         }
       }
 
-      const entry = {
+      await saveEntry({
         content,
         tags,
         date: new Date().toISOString(),
-        userId: user.uid,
-        updatedAt: new Date().toISOString(),
         imageUrl,
         audioUrl,
         location,
         eventTime: eventTime || null,
-      };
+      });
       
-      await addDoc(collection(db, 'entries'), entry);
-      
-      // Also save to local storage for offline access
-      try {
-        const localEntries = JSON.parse(localStorage.getItem('journal_entries') || '[]');
-        localEntries.unshift({ ...entry, id: Date.now().toString() });
-        localStorage.setItem('journal_entries', JSON.stringify(localEntries));
-      } catch (e) {
-        console.error('Error saving to local storage:', e);
-      }
+      await clearDraft();
       
       navigate('/');
     } catch (error) {
@@ -571,6 +612,61 @@ export default function AddEntryPage() {
       </div>
 
       <div style={styles.content}>
+        {showDraftPrompt && (
+          <div style={{
+            backgroundColor: theme.surface,
+            border: `1px solid ${theme.accent}`,
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '24px',
+            maxWidth: '900px',
+            margin: '0 auto 24px auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: `0 4px 12px ${theme.accent}15`
+          }}>
+            <div>
+              <div style={{ fontWeight: '600', color: theme.text, marginBottom: '4px' }}>
+                Unsaved draft found
+              </div>
+              <div style={{ fontSize: '14px', color: theme.textSecondary }}>
+                You have a draft from {new Date(pendingDraft?.updatedAt).toLocaleString()}. Would you like to resume it?
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={discardDraft}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: 'transparent',
+                  color: theme.danger,
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Discard
+              </button>
+              <button 
+                onClick={resumeDraft}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: theme.accent,
+                  color: accentText,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Resume
+              </button>
+            </div>
+          </div>
+        )}
         <div style={styles.form}>
           <div style={styles.editorCard}>
             <div style={styles.toolbar}>

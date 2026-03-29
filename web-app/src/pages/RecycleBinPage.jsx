@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs, doc, deleteDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { formatDate } from '../utils/entryUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { getRecycleBin, saveToRecycleBin, saveEntry } from '../utils/storage';
 
 export default function RecycleBinPage() {
   const { theme } = useTheme();
@@ -21,18 +20,9 @@ export default function RecycleBinPage() {
   }, [user]);
 
   const loadDeletedEntries = async () => {
-    if (!user) return;
-
+    setLoading(true);
     try {
-      const q = query(
-        collection(db, 'deletedEntries'),
-        where('userId', '==', user.uid)
-      );
-      const snapshot = await getDocs(q);
-      const entries = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const entries = await getRecycleBin();
       setDeletedEntries(entries);
     } catch (error) {
       console.error('Error loading deleted entries:', error);
@@ -44,14 +34,12 @@ export default function RecycleBinPage() {
   const restoreEntry = async (entry) => {
     try {
       const { deletedAt, ...entryData } = entry;
+      // Restore using storage.js utilities
+      await saveEntry(entryData);
       
-      // Restore to entries collection
-      await setDoc(doc(db, 'entries', entry.id), entryData);
-      
-      // Remove from deleted entries
-      await deleteDoc(doc(db, 'deletedEntries', entry.id));
-      
-      setDeletedEntries(deletedEntries.filter(e => e.id !== entry.id));
+      const updatedBin = deletedEntries.filter(e => e.id !== entry.id);
+      await saveToRecycleBin(updatedBin);
+      setDeletedEntries(updatedBin);
     } catch (error) {
       console.error('Error restoring entry:', error);
     } finally {
@@ -61,8 +49,9 @@ export default function RecycleBinPage() {
 
   const permanentDelete = async (entryId) => {
     try {
-      await deleteDoc(doc(db, 'deletedEntries', entryId));
-      setDeletedEntries(deletedEntries.filter(e => e.id !== entryId));
+      const updatedBin = deletedEntries.filter(e => e.id !== entryId);
+      await saveToRecycleBin(updatedBin);
+      setDeletedEntries(updatedBin);
     } catch (error) {
       console.error('Error deleting entry:', error);
     } finally {

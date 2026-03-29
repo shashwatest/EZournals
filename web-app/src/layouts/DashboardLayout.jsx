@@ -173,26 +173,7 @@ export default function DashboardLayout() {
       color: theme.textSecondary,
       padding: '0 12px',
       marginBottom: '8px',
-    },
-    collapsedToggle: {
-      position: 'sticky',
-      top: '20px',
-      left: '20px',
-      zIndex: 20,
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '42px',
-      height: '42px',
-      margin: '20px 0 0 20px',
-      borderRadius: '12px',
-      border: `1px solid ${theme.border}`,
-      backgroundColor: theme.surface,
-      color: theme.text,
-      cursor: 'pointer',
-      backdropFilter: currentTheme === 'glassmorphism' ? 'blur(20px)' : 'none',
-      WebkitBackdropFilter: currentTheme === 'glassmorphism' ? 'blur(20px)' : 'none',
-    },
+    }
   };
 
   return (
@@ -306,15 +287,6 @@ export default function DashboardLayout() {
       </div>
 
       <div style={styles.main}>
-        {sidebarCollapsed && (
-          <button
-            style={styles.collapsedToggle}
-            onClick={() => setSidebarCollapsed(false)}
-            title="Expand Sidebar"
-          >
-            <PanelLeftOpen size={18} />
-          </button>
-        )}
         <Outlet />
       </div>
     </div>

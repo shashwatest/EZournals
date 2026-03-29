@@ -29,6 +29,13 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../backend/firebase/config';
 import { getMoodTags } from '../backend/utils/moodTags';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+
+// Silence Reanimated strict mode warnings (harmless warnings from color picker library)
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 const Stack = createStackNavigator();
 

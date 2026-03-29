@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getUserTags, saveUserTag, deleteUserTag } from '../../backend/utils/storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { themes } from '../styles/theme';
 import { fullSync, getLastSyncTime } from '../../backend/firebase/cloudStorage';
@@ -9,23 +8,24 @@ import { auth } from '../../backend/firebase/config';
 import { formatSyncTime } from '../utils/entryUtils';
 import { showAlert, showConfirm } from '../utils/appAlert';
 import { getMoodTags, addMoodTag, updateMoodTag, deleteMoodTag as removeMoodTag } from '../../backend/utils/moodTags';
+import QuotaUsage from '../components/QuotaUsage';
+import ColorPickerModal from '../components/ColorPicker';
+
 
 export default function SettingsScreen({ navigation }) {
   const { theme, currentTheme, customThemes, changeTheme, deleteCustomTheme, isLoading } = useTheme();
   const accentText = theme?.onAccentText || '#fff';
-  const [userTags, setUserTags] = useState([]);
-  const [newTag, setNewTag] = useState('');
   const [moodTags, setMoodTags] = useState([]);
   const [newMoodTag, setNewMoodTag] = useState('');
   const [editingMoodTag, setEditingMoodTag] = useState(null);
   const [editingMoodName, setEditingMoodName] = useState('');
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
 
   const loadSettings = async () => {
     try {
-      const tags = await getUserTags();
-      setUserTags(tags);
       setMoodTags(await getMoodTags());
       const syncTime = await getLastSyncTime();
       setLastSync(syncTime);
@@ -66,35 +66,12 @@ export default function SettingsScreen({ navigation }) {
     );
   }
 
-  const addNewTag = async () => {
-    if (newTag.trim() && !userTags.includes(newTag.trim())) {
-      const tag = newTag.trim();
-      await saveUserTag(tag);
-      setUserTags([...userTags, tag]);
-      setNewTag('');
-    } else {
-      await showAlert({ title: 'Invalid Tag', message: 'Tag already exists or is empty' });
-    }
-  };
-
-  const deleteTag = async (tagToDelete) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Tag',
-      message: `Are you sure you want to delete "${tagToDelete}"?`,
-      confirmLabel: 'Delete',
-      confirmTone: 'danger',
-    });
-    if (confirmed) {
-      await deleteUserTag(tagToDelete);
-      setUserTags(userTags.filter(tag => tag !== tagToDelete));
-    }
-  };
-
   const addNewMoodTag = async () => {
     try {
-      const updatedTags = await addMoodTag(newMoodTag);
+      const updatedTags = await addMoodTag(newMoodTag, selectedColor);
       setMoodTags(updatedTags);
       setNewMoodTag('');
+      setSelectedColor(null);
     } catch (error) {
       await showAlert({ title: 'Invalid Mood Tag', message: error.message });
     }
@@ -103,10 +80,11 @@ export default function SettingsScreen({ navigation }) {
   const saveMoodTagEdit = async () => {
     if (!editingMoodTag) return;
     try {
-      const updatedTags = await updateMoodTag(editingMoodTag, editingMoodName);
+      const updatedTags = await updateMoodTag(editingMoodTag, editingMoodName, selectedColor);
       setMoodTags(updatedTags);
       setEditingMoodTag(null);
       setEditingMoodName('');
+      setSelectedColor(null);
     } catch (error) {
       await showAlert({ title: 'Invalid Mood Tag', message: error.message });
     }
@@ -176,6 +154,9 @@ export default function SettingsScreen({ navigation }) {
               Last synced: {formatSyncTime(lastSync)}
             </Text>
           )}
+          <View style={{ marginTop: 16 }}>
+            <QuotaUsage fontFamily={null} />
+          </View>
         </View>
         
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
@@ -198,6 +179,7 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
 
+          <View style={styles.themeGrid}>
             {themeOptions.map(option => (
               <TouchableOpacity
                 key={option.name}
@@ -243,10 +225,12 @@ export default function SettingsScreen({ navigation }) {
               <Text style={[styles.themeLabel, { color: theme.text }]}>Create Custom Theme</Text>
               <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Mood Tags</Text>
+          
           <View style={styles.tagInputContainer}>
             <TextInput
               style={[styles.tagInput, { borderColor: theme.border, color: theme.text }]}
@@ -260,13 +244,38 @@ export default function SettingsScreen({ navigation }) {
               <Ionicons name="add" size={20} color={accentText} />
             </TouchableOpacity>
           </View>
+          
+          {(newMoodTag.length > 0 || editingMoodTag) && (
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8 }}>Choose a color:</Text>
+              <TouchableOpacity 
+                style={[styles.colorPickerButton, { borderColor: theme.border }]}
+                onPress={() => setColorPickerVisible(true)}
+              >
+                <View style={[styles.colorPreviewCircle, { backgroundColor: selectedColor || theme.accent }]} />
+                <Text style={{ color: theme.text, flex: 1 }}>
+                  {selectedColor || 'Tap to select color'}
+                </Text>
+                <Ionicons name="color-palette" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
 
           <View style={styles.tagsList}>
             <Text style={[styles.tagsListTitle, { color: theme.textSecondary }]}>Mood Tags:</Text>
             <View style={styles.tagRows}>
               {moodTags.map((tag) => (
                 <View key={tag.name} style={[styles.tagRow, { borderColor: theme.border }]}>
-                  <View style={[styles.themeColor, { backgroundColor: tag.color, marginRight: 12 }]} />
+                  <TouchableOpacity 
+                    style={[styles.themeColor, { backgroundColor: tag.color, marginRight: 12 }]} 
+                    onPress={() => {
+                      if (editingMoodTag === tag.name) {
+                        setSelectedColor(tag.color);
+                        setColorPickerVisible(true);
+                      }
+                    }}
+                  />
                   {editingMoodTag === tag.name ? (
                     <TextInput
                       style={[styles.moodEditInput, { borderColor: theme.border, color: theme.text }]}
@@ -280,16 +289,22 @@ export default function SettingsScreen({ navigation }) {
                   )}
                   {editingMoodTag === tag.name ? (
                     <>
+                      <TouchableOpacity 
+                        onPress={() => setColorPickerVisible(true)} 
+                        style={styles.actionButton}
+                      >
+                        <Ionicons name="color-palette" size={16} color={theme.accent} />
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={saveMoodTagEdit} style={styles.actionButton}>
                         <Ionicons name="checkmark" size={18} color={theme.accent} />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { setEditingMoodTag(null); setEditingMoodName(''); }} style={styles.actionButton}>
+                      <TouchableOpacity onPress={() => { setEditingMoodTag(null); setEditingMoodName(''); setSelectedColor(null); }} style={styles.actionButton}>
                         <Ionicons name="close" size={18} color={theme.textSecondary} />
                       </TouchableOpacity>
                     </>
                   ) : (
                     <>
-                      <TouchableOpacity onPress={() => { setEditingMoodTag(tag.name); setEditingMoodName(tag.name); }} style={styles.actionButton}>
+                      <TouchableOpacity onPress={() => { setEditingMoodTag(tag.name); setEditingMoodName(tag.name); setSelectedColor(tag.color); }} style={styles.actionButton}>
                         <Ionicons name="pencil" size={16} color={theme.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => deleteMoodTag(tag.name)} style={styles.actionButton}>
@@ -304,37 +319,6 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Custom Tags</Text>
-          <View style={styles.tagInputContainer}>
-            <TextInput
-              style={[styles.tagInput, { borderColor: theme.border, color: theme.text }]}
-              placeholder="Create new tag"
-              placeholderTextColor={theme.textLight}
-              value={newTag}
-              onChangeText={setNewTag}
-              onSubmitEditing={addNewTag}
-            />
-            <TouchableOpacity style={[styles.addTagButton, { backgroundColor: theme.accent }]} onPress={addNewTag}>
-              <Ionicons name="add" size={20} color={accentText} />
-            </TouchableOpacity>
-          </View>
-          
-          {userTags.length > 0 && (
-            <View style={styles.tagsList}>
-              <Text style={[styles.tagsListTitle, { color: theme.textSecondary }]}>Your Tags:</Text>
-              <View style={styles.tagsContainer}>
-                {userTags.map(tag => (
-                  <TouchableOpacity key={tag} style={[styles.tag, { backgroundColor: theme.accent + '20' }]} onLongPress={() => deleteTag(tag)}>
-                    <Text style={[styles.tagText, { color: theme.accent }]}>{tag}</Text>
-                    <Ionicons name="close-circle" size={16} color={theme.danger} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>About</Text>
           <View style={styles.aboutContainer}>
             <Text style={[styles.aboutText, { color: theme.text }]}>EZournals v1.0</Text>
@@ -343,6 +327,14 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
       </ScrollView>
+
+      <ColorPickerModal
+        visible={colorPickerVisible}
+        onClose={() => setColorPickerVisible(false)}
+        onSelectColor={(color) => setSelectedColor(color)}
+        initialColor={selectedColor || '#2196F3'}
+        title={editingMoodTag ? `Color for ${editingMoodName}` : 'Choose Mood Color'}
+      />
     </View>
   );
 }
@@ -403,7 +395,8 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   themeGrid: {
-    gap: 8
+    gap: 8,
+    marginTop: 16
   },
   themeOption: {
     flexDirection: 'row',
@@ -551,5 +544,21 @@ const styles = StyleSheet.create({
   lastSyncText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  colorPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  colorPreviewCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
 });

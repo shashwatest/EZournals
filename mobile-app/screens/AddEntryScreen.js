@@ -19,6 +19,7 @@ import { StatusBar } from 'react-native';
 import { getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
 import { showAlert } from '../utils/appAlert';
 import { useSpeechRecognition } from '../utils/speechRecognition';
+import { saveDraft, loadDraft, clearDraft } from '../../backend/utils/drafts';
 
 
 export default function AddEntryScreen({ navigation, route }) {
@@ -39,6 +40,9 @@ export default function AddEntryScreen({ navigation, route }) {
   const [eventTime, setEventTime] = useState('');
   const [aiEnabled, setAiEnabled] = useState(false);
   const [detectingMood, setDetectingMood] = useState(false);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState(null);
+  const autoSaveTimerRef = useRef(null);
   const contentRef = useRef('');
 
   useEffect(() => { contentRef.current = content; }, [content]);
@@ -66,7 +70,49 @@ export default function AddEntryScreen({ navigation, route }) {
 
   useEffect(() => {
     checkAIStatus();
+    checkForDraft();
   }, []);
+
+  const checkForDraft = async () => {
+    const draft = await loadDraft();
+    if (draft && draft.content && !content.trim()) {
+      setPendingDraft(draft);
+      setShowDraftPrompt(true);
+    }
+  };
+
+  const resumeDraft = () => {
+    if (pendingDraft) {
+      setContent(pendingDraft.content);
+      setSelectedTags(pendingDraft.tags || []);
+      setEventTime(pendingDraft.eventTime || '');
+    }
+    setShowDraftPrompt(false);
+  };
+
+  const discardDraft = () => {
+    clearDraft();
+    setShowDraftPrompt(false);
+  };
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!content.trim() && selectedTags.length === 0) return;
+    
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveDraft({
+        content,
+        tags: selectedTags,
+        eventTime,
+      });
+    }, 3000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [content, selectedTags, eventTime]);
 
   // Auto-start voice when navigated with voice: true
   useEffect(() => {
@@ -137,6 +183,10 @@ export default function AddEntryScreen({ navigation, route }) {
       await showAlert({ title: 'Empty Entry', message: 'Please write something before saving' });
       return;
     }
+    if (content.length > 50000) {
+      await showAlert({ title: 'Entry Too Long', message: 'Your entry exceeds the maximum allowed length (50,000 characters). Please condense it before saving.', confirmTone: 'danger' });
+      return;
+    }
     
     try {
       let uploadedImageUrl = null;
@@ -170,10 +220,13 @@ export default function AddEntryScreen({ navigation, route }) {
         location,
         eventTime: eventTime || null,
       });
+      
+      // Clear draft on success
+      await clearDraft();
+      
       navigation.goBack();
     } catch (error) {
       await showAlert({ title: 'Error', message: 'Failed to save entry', confirmTone: 'danger' });
-      console.error('[AddEntryScreen] Error saving entry:', error);
     }
   };
 
@@ -201,6 +254,24 @@ export default function AddEntryScreen({ navigation, route }) {
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {showDraftPrompt && (
+          <View style={[styles.draftPrompt, isGlassTheme && getGlassPanelStyle(theme, currentTheme)]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.draftTitle, { fontFamily }]}>Unsaved draft found</Text>
+              <Text style={[styles.draftSubtitle, { fontFamily }]}>
+                From {new Date(pendingDraft?.updatedAt).toLocaleString()}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity onPress={discardDraft} style={styles.draftDiscard}>
+                <Text style={{ color: theme.danger, fontSize: 13, fontWeight: '600' }}>Discard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={resumeDraft} style={[styles.draftResume, { backgroundColor: theme.accent }]}>
+                <Text style={{ color: accentText, fontSize: 13, fontWeight: '600' }}>Resume</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
         <View style={styles.editorContainer}>
           <RichTextEditor
             value={content}
@@ -476,5 +547,49 @@ const createStyles = (theme) => StyleSheet.create({
   audioSheetSheen: {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+  },
+  draftPrompt: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  draftTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.text,
+    marginBottom: 2,
+  },
+  draftSubtitle: {
+    fontSize: 12,
+    color: theme.textSecondary,
+  },
+  draftDiscard: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  draftResume: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
 });

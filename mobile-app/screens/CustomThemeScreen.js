@@ -1,27 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { classyBWTheme } from '../styles/theme';
-import { getGlassBackdropStyle, getGlassPanelStyle, getGlassSheenStyle, isGlassTheme as isGlassThemeEnabled } from '../utils/glassStyles';
+import ColorPickerModal from '../components/ColorPicker';
 
 export default function CustomThemeScreen({ navigation, route }) {
   const { theme, currentTheme, saveCustomTheme, updateCustomTheme } = useTheme();
-  const isGlassTheme = isGlassThemeEnabled(currentTheme);
   const editTheme = route?.params?.editTheme;
   const [customColors, setCustomColors] = useState(editTheme || classyBWTheme);
   const [selectedField, setSelectedField] = useState(null);
 
-  const colorPalette = [
-    '#FF5722', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-    '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-    '#FFEB3B', '#FFC107', '#FF9800', '#795548', '#9E9E9E', '#607D8B', 
-    '#000000', '#FFFFFF', '#F44336', '#E53935', '#D32F2F', '#C62828', 
-    '#B71C1C', '#FCE4EC', '#F8BBD9', '#E1BEE7', '#D1C4E9', '#C5CAE9', 
-    '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#A5D6A7'
-  ];
-  
   const [themeName, setThemeName] = useState(editTheme?.name || 'My Custom Theme');
 
   const colorFields = [
@@ -42,7 +31,7 @@ export default function CustomThemeScreen({ navigation, route }) {
     }
   };
 
-  const selectColorFromPalette = (color) => {
+  const handleColorSelect = (color) => {
     if (selectedField) {
       setCustomColors(prev => ({ ...prev, [selectedField]: color }));
       setSelectedField(null);
@@ -139,44 +128,13 @@ export default function CustomThemeScreen({ navigation, route }) {
         </TouchableOpacity>
       </ScrollView>
       
-      <Modal
+      <ColorPickerModal
         visible={selectedField !== null}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setSelectedField(null)}
-      >
-        <View style={[styles.modalOverlay, getGlassBackdropStyle(currentTheme)]}>
-          <View
-            style={[
-              styles.modalContent,
-              isGlassTheme
-                ? getGlassPanelStyle(theme, currentTheme, { borderRadius: 16 })
-                : { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}
-          >
-            {isGlassTheme && <BlurView intensity={96} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />}
-            {isGlassTheme && <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.modalGlassSheen, getGlassSheenStyle(currentTheme)]} />}
-            <Text style={styles.modalTitle}>
-              Choose Color for {colorFields.find(f => f.key === selectedField)?.label}
-            </Text>
-            <View style={styles.palette}>
-              {colorPalette.map((color, index) => (
-                <TouchableOpacity
-                  key={`${color}-${index}`}
-                  style={[styles.paletteColor, { backgroundColor: color }]}
-                  onPress={() => selectColorFromPalette(color)}
-                />
-              ))}
-            </View>
-            <TouchableOpacity 
-              style={styles.modalCancelButton} 
-              onPress={() => setSelectedField(null)}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setSelectedField(null)}
+        onSelectColor={handleColorSelect}
+        initialColor={selectedField ? customColors[selectedField] : '#2196F3'}
+        title={`Choose ${colorFields.find(f => f.key === selectedField)?.label || 'Color'}`}
+      />
     </View>
   );
 }
@@ -316,55 +274,5 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.danger,
     fontSize: 16,
     fontWeight: '600'
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  modalContent: {
-    backgroundColor: theme.surface,
-    borderRadius: 16,
-    padding: 20,
-    margin: 20,
-    maxWidth: 320,
-    width: '90%',
-    borderWidth: 1,
-  },
-  modalGlassSheen: {
-    borderRadius: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.text,
-    marginBottom: 20,
-    textAlign: 'center'
-  },
-  palette: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 12
-  },
-  paletteColor: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: theme.border
-  },
-  modalCancelButton: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: theme.background,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
-  modalCancelText: {
-    color: theme.text,
-    fontSize: 16,
-    fontWeight: '500'
   }
 });

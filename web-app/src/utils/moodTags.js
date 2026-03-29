@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
-const MOOD_TAGS_STORAGE_KEY = 'mood_tags';
+const getStorageKey = () => auth.currentUser ? `mood_tags_${auth.currentUser.uid}` : 'mood_tags';
 const PREFERENCES_COLLECTION = 'userPreferences';
 
 const FALLBACK_COLORS = [
@@ -70,7 +70,7 @@ const savePreferences = async (moodTags) => {
 const persistMoodTags = async (tags) => {
   const normalized = normalizeMoodTags(tags);
   cachedMoodTags = normalized;
-  localStorage.setItem(MOOD_TAGS_STORAGE_KEY, JSON.stringify(normalized));
+  localStorage.setItem(getStorageKey(), JSON.stringify(normalized));
   await savePreferences(normalized);
   return normalized;
 };
@@ -127,7 +127,7 @@ const updateEntryTags = async (mutator) => {
 
 export const getMoodTags = async () => {
   try {
-    const stored = localStorage.getItem(MOOD_TAGS_STORAGE_KEY);
+    const stored = localStorage.getItem(getStorageKey());
     if (stored) {
       cachedMoodTags = normalizeMoodTags(JSON.parse(stored));
       return [...cachedMoodTags];
@@ -139,7 +139,7 @@ export const getMoodTags = async () => {
       if (moodTags?.length) {
         const normalized = normalizeMoodTags(moodTags);
         cachedMoodTags = normalized;
-        localStorage.setItem(MOOD_TAGS_STORAGE_KEY, JSON.stringify(normalized));
+        localStorage.setItem(getStorageKey(), JSON.stringify(normalized));
         return [...normalized];
       }
     }
@@ -158,7 +158,7 @@ export const getCachedMoodTagColor = (tagName) => {
   return tag ? tag.color : '#95A5A6';
 };
 
-export const addMoodTag = async (name) => {
+export const addMoodTag = async (name, customColor = null) => {
   const trimmedName = name.trim();
   if (!trimmedName) {
     throw new Error('Mood tag name cannot be empty');
@@ -171,11 +171,11 @@ export const addMoodTag = async (name) => {
 
   return persistMoodTags([
     ...existing,
-    { name: trimmedName, color: FALLBACK_COLORS[existing.length % FALLBACK_COLORS.length] },
+    { name: trimmedName, color: customColor || FALLBACK_COLORS[existing.length % FALLBACK_COLORS.length] },
   ]);
 };
 
-export const updateMoodTag = async (previousName, nextName) => {
+export const updateMoodTag = async (previousName, nextName, nextColor = null) => {
   const trimmedName = nextName.trim();
   if (!trimmedName) {
     throw new Error('Mood tag name cannot be empty');
@@ -196,7 +196,7 @@ export const updateMoodTag = async (previousName, nextName) => {
   }
 
   const updatedTags = existing.map((tag) =>
-    tag.name === previousName ? { ...tag, name: trimmedName } : tag
+    tag.name === previousName ? { ...tag, name: trimmedName, color: nextColor || tag.color } : tag
   );
 
   await persistMoodTags(updatedTags);

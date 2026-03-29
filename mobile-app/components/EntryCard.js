@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUISettings } from '../contexts/UISettingsContext';
-import { getTagColor } from '../../backend/utils/storage';
+import { getTagColor } from '../utils/entryUtils';
 import RichTextRenderer from './RichTextRenderer';
 
 export default function EntryCard({ entry, onPress, onDelete, onMerge, themeOverride }) {

@@ -150,6 +150,14 @@ export const deleteEntry = async (id) => {
     deleteEntryFromCloud(id).catch(err => {
       console.error('Cloud delete failed:', err);
     });
+
+    // Save to Recycle Bin with cloud sync
+    const entryToDelete = entries.find(e => e.id === id);
+    if (entryToDelete) {
+      const bin = await getRecycleBin();
+      const updatedBin = [{ ...entryToDelete, deletedAt: new Date().toISOString() }, ...bin];
+      await saveToRecycleBin(updatedBin);
+    }
   } catch (error) {
     console.error('Error deleting entry:', error);
     throw error;
@@ -184,8 +192,24 @@ export const updateEntry = async (id, updatedEntry) => {
 
 export const getRecycleBin = async () => {
   try {
+    const { auth } = require('../firebase/config');
+    const user = auth.currentUser;
+    
+    // Try local first for speed
     const data = await PlatformStorage.getItem('recycleBin');
-    return data ? JSON.parse(data) : [];
+    let bin = data ? JSON.parse(data) : [];
+
+    // If logged in, fetch from cloud if local is empty to ensure cross-device sync
+    if (user && bin.length === 0) {
+      const { getPreferencesFromCloud } = require('../firebase/cloudStorage');
+      const prefs = await getPreferencesFromCloud();
+      if (prefs?.recycleBin) {
+        bin = prefs.recycleBin;
+        await PlatformStorage.setItem('recycleBin', JSON.stringify(bin));
+      }
+    }
+    
+    return bin;
   } catch (error) {
     console.error('Error getting recycle bin:', error);
     return [];
@@ -194,7 +218,12 @@ export const getRecycleBin = async () => {
 
 export const saveToRecycleBin = async (entries) => {
   try {
+    const { savePreferencesToCloud } = require('../firebase/cloudStorage');
     await PlatformStorage.setItem('recycleBin', JSON.stringify(entries));
+    // Sync to cloud
+    savePreferencesToCloud({ recycleBin: entries }).catch(err => {
+      console.error('Error syncing recycle bin to cloud:', err);
+    });
   } catch (error) {
     console.error('Error saving to recycle bin:', error);
   }

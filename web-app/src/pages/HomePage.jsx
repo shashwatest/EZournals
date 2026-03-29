@@ -5,10 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUISettings } from '../contexts/UISettingsContext';
 import { collection, query, where, getDocs, doc, deleteDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Search, Trash2, Edit, Mic } from 'lucide-react';
 import { sortEntries, countWords, getDateKey, groupEntriesByDate } from '../utils/entryUtils';
-import { GitMerge } from 'lucide-react';
+import { GitMerge, Plus, Search, Trash2, Edit, Mic } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { getRecycleBin, saveToRecycleBin } from '../utils/storage';
 
 // SVG noise texture for matte feel on cards
 const noiseTexture = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`;
@@ -158,25 +158,33 @@ export default function HomePage() {
 
   const handleDelete = async (entryId, entry) => {
     try {
+      const currentBin = await getRecycleBin();
+      let updatedBin = [...currentBin];
+
       if (entry.isMergedGroup) {
         for (const sub of entry.subEntries) {
-          const deletedEntry = { ...sub, deletedAt: Date.now() };
-          await setDoc(doc(db, 'deletedEntries', sub.id), deletedEntry);
+          updatedBin.unshift({ ...sub, deletedAt: new Date().toISOString() });
           await deleteDoc(doc(db, 'entries', sub.id));
         }
         setEntries(entries.filter(e => !entry.subEntries.find(s => s.id === e.id)));
       } else {
-        const deletedEntry = { ...entry, deletedAt: Date.now() };
-        await setDoc(doc(db, 'deletedEntries', entryId), deletedEntry);
+        updatedBin.unshift({ ...entry, deletedAt: new Date().toISOString() });
         await deleteDoc(doc(db, 'entries', entryId));
         setEntries(entries.filter(e => e.id !== entryId));
       }
+      
+      await saveToRecycleBin(updatedBin);
     } catch (error) {
       console.error('Error deleting entry:', error);
     } finally {
       setDeleteCandidate(null);
     }
   };
+
+  // Guard against undefined theme during initial render
+  if (!theme) {
+    return <div style={{ padding: '32px', textAlign: 'center' }}>Loading...</div>;
+  }
 
   const styles = {
     container: {

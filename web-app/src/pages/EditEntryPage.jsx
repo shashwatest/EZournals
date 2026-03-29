@@ -80,6 +80,11 @@ export default function EditEntryPage() {
       return;
     }
 
+    if (content.length > 50000) {
+      await showAlert({ title: 'Entry Too Long', message: 'Your entry exceeds the maximum allowed length (50,000 characters). Please condense it before saving.', confirmTone: 'danger' });
+      return;
+    }
+
     setSaving(true);
     try {
       let imageUrl = existingImageUrl;
